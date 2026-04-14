@@ -1027,9 +1027,14 @@
         <input type="text" id="parentName" placeholder="Full name" title="Parent's name — this will appear in the PayNow reference so we can match your payment" required>
       </div>
       <div class="field">
-        <label>Email Address <span class="req">*</span></label>
-        <input type="email" id="email" placeholder="e.g. parent@email.com" required>
-        <div class="hint">Confirmation details will be sent to this email.</div>
+        <label>Parent's Email Address <span class="req">*</span></label>
+        <input type="email" id="email" placeholder="parent@email.com" title="We'll send your booking confirmation and receipt to this address" required>
+        <div class="hint">We'll send your confirmation and a copy of your receipt to this email.</div>
+      </div>
+      <div class="field">
+        <label>Parent's WhatsApp Number <span class="req">*</span></label>
+        <input type="tel" id="whatsapp" placeholder="e.g. 9123 4567" title="Singapore mobile number — we'll only WhatsApp you if we need to reach you about this booking" inputmode="tel" autocomplete="tel" required>
+        <div class="hint">Please enter an 8-digit Singapore mobile number (e.g. starting with 8 or 9). We'll only reach out on WhatsApp if something about your booking needs attention.</div>
       </div>
     </div>
 
@@ -1153,19 +1158,23 @@
       <div class="card-title"><span class="step-num">6</span> Confirm &amp; Submit</div>
 
       <div class="disclaimer-box">
-        <h4>Important — Please Read</h4>
+        <h4>A Few Things Before You Submit</h4>
+        <p style="font-size:12px;color:var(--gray-600);margin-bottom:10px;line-height:1.6;">
+          Thank you so much for choosing Polymath Learning Centre for your child's June holiday enrichment. We're really looking forward to having them join us! Before you hit submit, please take a moment to read through the points below so there are no surprises later.
+        </p>
         <ul>
-          <li>Ensure all information provided is accurate before submitting.</li>
-          <li><strong>No refunds</strong> will be given once registration is confirmed.</li>
-          <li>Slot or mode changes after registration are subject to availability.</li>
-          <li>A confirmation email will be sent to the address provided.</li>
-          <li>Workshop conducted by Mr. Chung, founder of Polymath Learning Centre.</li>
+          <li>Please double-check the details above — especially the student's name, level, slot and parent contact details — so we can look after your child properly.</li>
+          <li>Kindly note that, as seats are limited and prepared in advance, <strong>registration fees are non-refundable</strong> once your booking is confirmed. We appreciate your understanding.</li>
+          <li>If you need to change your slot or class mode after registering, please drop us a WhatsApp message as early as possible — we'll do our best to accommodate, subject to seat availability.</li>
+          <li>A confirmation email (with a copy of your receipt attached) will be sent to the email address you provided. Full joining details — Zoom link or venue directions — will follow closer to the programme dates.</li>
+          <li>The workshop will be personally conducted by Mr. Chung, founder of Polymath Learning Centre.</li>
+          <li>By submitting this form, you also give us permission to contact you via the email and WhatsApp number you provided, solely for matters related to this booking.</li>
         </ul>
       </div>
 
       <label class="checkbox-field">
         <input type="checkbox" id="agreeCheck">
-        <span>I confirm that all information above is accurate, and I understand that <strong>no refunds</strong> will be issued once registration is complete.</span>
+        <span>I've read the notes above, I confirm that the details I've entered are accurate, and I understand that <strong>registration fees are non-refundable</strong> once my booking is confirmed.</span>
       </label>
     </div>
 
@@ -1561,17 +1570,41 @@ document.getElementById('agreeCheck').addEventListener('change', updateProgressi
 // Each step is locked until the previous one is completed. Inline hints tell
 // the user exactly what's missing. The submit button stays disabled until the
 // full chain is satisfied, and its tooltip always describes the next action.
+function normalizeSgMobile(input) {
+  const digits = String(input || '').replace(/\D/g, '');
+  // If the number was entered with a country code (65xxxxxxxx or +65xxxxxxxx),
+  // strip the leading 65 so we're always left with the bare 8-digit mobile.
+  if (digits.length === 10 && digits.startsWith('65')) return digits.slice(2);
+  return digits;
+}
+
+function isValidSgMobile(input) {
+  // Singapore mobiles are 8 digits starting with 8 or 9.
+  return /^[89]\d{7}$/.test(normalizeSgMobile(input));
+}
+
+function formatWhatsappDisplay(normalized) {
+  // Turn "91234567" into "9123 4567" for nicer display in emails.
+  return normalized && normalized.length === 8
+    ? normalized.slice(0, 4) + ' ' + normalized.slice(4)
+    : normalized;
+}
+
 function getFormState() {
   const studentName = document.getElementById('studentName').value.trim();
   const parentName = document.getElementById('parentName').value.trim();
   const email = document.getElementById('email').value.trim();
-  const detailsOk = studentName && parentName && EMAIL_RE.test(email);
+  const whatsappRaw = document.getElementById('whatsapp').value.trim();
+  const whatsapp = normalizeSgMobile(whatsappRaw);
+  const whatsappOk = isValidSgMobile(whatsappRaw);
+  const detailsOk = studentName && parentName && EMAIL_RE.test(email) && whatsappOk;
   const level = levelSelect.value;
   const mode = modeSelect.value;
   const slot = document.querySelector('input[name="slot"]:checked');
   const receipt = document.getElementById('receiptFile').files[0];
   const agreed = document.getElementById('agreeCheck').checked;
-  return { studentName, parentName, email, detailsOk, level, mode, slot, receipt, agreed };
+  return { studentName, parentName, email, whatsapp, whatsappRaw, whatsappOk,
+           detailsOk, level, mode, slot, receipt, agreed };
 }
 
 function setHint(id, message, variant) {
@@ -1595,6 +1628,8 @@ function getFirstMissingMessage(state) {
   if (!state.parentName) return "Please enter the parent's full name (Step 1).";
   if (!state.email) return 'Please enter a contact email (Step 1).';
   if (!EMAIL_RE.test(state.email)) return 'Please enter a valid email address (Step 1).';
+  if (!state.whatsappRaw) return "Please enter the parent's WhatsApp number (Step 1).";
+  if (!state.whatsappOk) return 'Please enter a valid 8-digit Singapore mobile number (Step 1).';
   if (!state.level) return 'Please select a level (Step 2).';
   if (!state.mode) return 'Please select a class mode (Step 3).';
   if (!state.slot) return 'Please choose a time slot (Step 4).';
@@ -1661,7 +1696,7 @@ function updateProgression() {
 // Back-compat alias — older code paths still call updateSubmitState.
 function updateSubmitState() { updateProgression(); }
 
-['studentName', 'parentName', 'email'].forEach(id => {
+['studentName', 'parentName', 'email', 'whatsapp'].forEach(id => {
   document.getElementById(id).addEventListener('input', updateProgression);
 });
 
@@ -1691,10 +1726,15 @@ function formatSgTimestamp(date) {
 }
 
 async function sendEnrollmentNotification(data) {
+  const waDisplay = formatWhatsappDisplay(data.whatsapp);
+  const waLink = data.whatsapp
+    ? '<a href="https://wa.me/65' + escapeHtml(data.whatsapp) + '">' + escapeHtml(waDisplay) + '</a>'
+    : '—';
   const rows = [
     ['Student Name', data.studentName],
     ['Parent Name', data.parentName],
     ['Parent Email', data.email],
+    ['Parent WhatsApp', waLink],
     ['Level', data.level],
     ['Class Mode', data.mode],
     ['Slot', data.slotLabel],
@@ -1705,8 +1745,9 @@ async function sendEnrollmentNotification(data) {
     ['Submitted At', formatSgTimestamp(new Date())]
   ];
 
+  const rawFields = { Receipt: true, 'Parent WhatsApp': true };
   const htmlRows = rows.map(([label, val]) => {
-    const safeVal = label === 'Receipt' ? val : escapeHtml(val);
+    const safeVal = rawFields[label] ? val : escapeHtml(val);
     return '<tr>'
       + '<td style="padding:8px 12px;border:1px solid #e5e5e5;background:#f5f5f5;font-weight:700;width:35%;">' + label + '</td>'
       + '<td style="padding:8px 12px;border:1px solid #e5e5e5;">' + safeVal + '</td>'
@@ -1779,17 +1820,22 @@ async function sendRegistrationSummary() {
       + '<th style="padding:6px 10px;border:1px solid #e5e5e5;background:#eeeeee;text-align:left;">Student</th>'
       + '<th style="padding:6px 10px;border:1px solid #e5e5e5;background:#eeeeee;text-align:left;">Parent</th>'
       + '<th style="padding:6px 10px;border:1px solid #e5e5e5;background:#eeeeee;text-align:left;">Email</th>'
+      + '<th style="padding:6px 10px;border:1px solid #e5e5e5;background:#eeeeee;text-align:left;">WhatsApp</th>'
       + '<th style="padding:6px 10px;border:1px solid #e5e5e5;background:#eeeeee;text-align:left;">Mode</th>'
       + '<th style="padding:6px 10px;border:1px solid #e5e5e5;background:#eeeeee;text-align:left;">Price</th>'
       + '<th style="padding:6px 10px;border:1px solid #e5e5e5;background:#eeeeee;text-align:left;">Receipt</th>'
       + '</tr></thead><tbody>';
 
     list.forEach((r, idx) => {
+      const waCell = r.whatsapp
+        ? '<a href="https://wa.me/65' + escapeHtml(r.whatsapp) + '">' + escapeHtml(formatWhatsappDisplay(r.whatsapp)) + '</a>'
+        : '—';
       html += '<tr>'
         + '<td style="padding:6px 10px;border:1px solid #e5e5e5;">' + (idx + 1) + '</td>'
         + '<td style="padding:6px 10px;border:1px solid #e5e5e5;">' + escapeHtml(r.studentName) + '</td>'
         + '<td style="padding:6px 10px;border:1px solid #e5e5e5;">' + escapeHtml(r.parentName) + '</td>'
         + '<td style="padding:6px 10px;border:1px solid #e5e5e5;">' + escapeHtml(r.email) + '</td>'
+        + '<td style="padding:6px 10px;border:1px solid #e5e5e5;">' + waCell + '</td>'
         + '<td style="padding:6px 10px;border:1px solid #e5e5e5;">' + escapeHtml(r.mode) + '</td>'
         + '<td style="padding:6px 10px;border:1px solid #e5e5e5;">$' + escapeHtml(r.price || 0) + '</td>'
         + '<td style="padding:6px 10px;border:1px solid #e5e5e5;">'
@@ -1810,8 +1856,10 @@ async function sendRegistrationSummary() {
     const list = grouped[slotId];
     textLines.push(SLOT_CONFIG[slotId].label + ' (' + list.length + ')');
     list.forEach((r, idx) => {
+      const wa = r.whatsapp ? ' / WA ' + formatWhatsappDisplay(r.whatsapp) : '';
       textLines.push('  ' + (idx + 1) + '. ' + r.studentName
-        + ' — ' + r.parentName + ' <' + r.email + '> — ' + r.mode + ' — $' + (r.price || 0));
+        + ' — ' + r.parentName + ' <' + r.email + '>' + wa
+        + ' — ' + r.mode + ' — $' + (r.price || 0));
     });
     textLines.push('');
   });
@@ -1836,6 +1884,8 @@ async function sendCustomerConfirmation(data) {
   const rows = [
     ['Student', data.studentName],
     ['Parent', data.parentName],
+    ['Parent Email', data.email],
+    ['Parent WhatsApp', data.whatsapp ? formatWhatsappDisplay(data.whatsapp) : '—'],
     ['Level', levelLabel],
     ['Class Mode', data.mode],
     ['Slot', data.slotLabel],
@@ -1926,7 +1976,7 @@ async function submitForm() {
     return;
   }
 
-  const { studentName, parentName, email, level, mode } = state;
+  const { studentName, parentName, email, whatsapp, level, mode } = state;
   const slotVal = state.slot.value;
   const receiptFile = state.receipt;
 
@@ -1946,7 +1996,7 @@ async function submitForm() {
     const receiptURL = await ref.getDownloadURL();
 
     await db.collection('june2026_registrations').add({
-      studentName, parentName, email, level, mode,
+      studentName, parentName, email, whatsapp, level, mode,
       slot: slotVal,
       slotLabel: SLOT_CONFIG[slotVal].label,
       price: getPrice(),
@@ -1961,7 +2011,7 @@ async function submitForm() {
     // and only log them to the console for debugging.
     try {
       const enrollmentPayload = {
-        studentName, parentName, email, level, mode,
+        studentName, parentName, email, whatsapp, level, mode,
         slot: slotVal,
         slotLabel: SLOT_CONFIG[slotVal].label,
         price: getPrice(),

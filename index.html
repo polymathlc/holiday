@@ -382,6 +382,8 @@
 
   .slot-card .slot-seats.low { color: var(--danger); }
 
+  .slot-card .slot-seats:empty { display: none; }
+
   .slot-hidden { display: none; }
 
   /* ══════════════════════════════════════════════════════════
@@ -1406,7 +1408,10 @@ function updateSlotUI() {
         card.classList.remove('disabled');
       }
     } else {
-      seatEl.textContent = 'Unlimited online seats';
+      // Online mode has no cap, so we deliberately leave the seat line blank.
+      // The CSS `:empty` rule below collapses the element so the slot card
+      // stays visually tight. Physical mode still shows the running count.
+      seatEl.textContent = '';
       seatEl.className = 'slot-seats';
       card.classList.remove('disabled');
     }

@@ -945,6 +945,86 @@
   }
 
   .step-hint.hidden { display: none !important; }
+
+  /* ══════════════════════════════════════════════════════════
+     WORKSHOP SCOPE PANEL (shown after level is picked)
+  ══════════════════════════════════════════════════════════ */
+  .scope-panel {
+    margin-top: 18px;
+    padding: 18px 20px 16px;
+    background: linear-gradient(180deg, var(--gray-50), var(--white));
+    border: 1px solid var(--gray-200);
+    border-left: 3px solid var(--black);
+    border-radius: var(--radius-sm);
+    animation: fadeUp 0.35s ease both;
+  }
+
+  .scope-panel.hidden { display: none !important; }
+
+  .scope-panel .scope-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.6px;
+    color: var(--black);
+    margin-bottom: 4px;
+  }
+
+  .scope-panel .scope-title::before {
+    content: '';
+    display: inline-block;
+    width: 18px;
+    height: 2px;
+    background: var(--black);
+  }
+
+  .scope-panel .scope-sub {
+    font-size: 12px;
+    color: var(--gray-500);
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+
+  .scope-panel .scope-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  @media (min-width: 520px) {
+    .scope-panel .scope-list { grid-template-columns: 1fr 1fr; }
+  }
+
+  .scope-panel .scope-list li {
+    font-size: 12.5px;
+    color: var(--gray-700);
+    padding: 5px 0 5px 22px;
+    position: relative;
+    line-height: 1.5;
+  }
+
+  .scope-panel .scope-list li::before {
+    content: '\2713';
+    position: absolute;
+    left: 2px;
+    top: 4px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: var(--black);
+    color: var(--white);
+    font-size: 9px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 </style>
 </head>
 <body>
@@ -1048,8 +1128,15 @@
           <option value="P6">P6 Science</option>
           <option value="P5">P5 Science</option>
         </select>
-        <div class="hint">This determines which dates and slots are available.</div>
+        <div class="hint">This determines which dates, slots and topic scope are shown.</div>
       </div>
+
+      <div class="scope-panel hidden" id="scope-panel">
+        <h4 class="scope-title"><span id="scope-heading">Workshop Scope</span></h4>
+        <p class="scope-sub" id="scope-sub">Topics your child will cover over the 2-day intensive.</p>
+        <ul class="scope-list" id="scope-list"></ul>
+      </div>
+
       <div class="step-hint" id="hint-level">Complete Step 1 (student & parent details) to unlock this step.</div>
     </div>
 
@@ -1235,6 +1322,42 @@ const SLOT_CONFIG = {
 
 let slotCounts = {};
 Object.keys(SLOT_CONFIG).forEach(k => slotCounts[k] = { physical: 0, online: 0 });
+
+// ─── Workshop Scope (topics covered per level) ───
+// Shown inside the level card as soon as a level is picked, so parents can
+// see exactly what their child will cover before committing to a slot.
+const SCOPE_CONTENT = {
+  P5: {
+    heading: 'P5 Science Workshop Scope',
+    subtitle: 'Topics your child will cover over the 2-day intensive.',
+    items: [
+      'Water and its 3 states',
+      'Electrical systems',
+      'Plant and human reproduction',
+      'Human and plant transport system',
+      'Forces',
+      'Analysing different question types',
+      'Template to craft open-ended answers for any PSLE question',
+      'Common misconceptions',
+      'Using the TCQ–CER method to conquer open-ended questions'
+    ]
+  },
+  P6: {
+    heading: 'P6 Science Workshop Scope',
+    subtitle: 'Topics your child will cover over the 2-day intensive.',
+    items: [
+      'Living Together',
+      'Adaptations',
+      'Plants Reproduction',
+      'Water and its 3 states',
+      'Heat',
+      'Forces',
+      'Analysing different question types',
+      'Template to craft open-ended answers we use to ace the PSLE',
+      'Common misconceptions'
+    ]
+  }
+};
 
 // ─── Firestore Real-Time ───
 function listenToSlotCounts() {
@@ -1485,10 +1608,33 @@ function onLevelOrModeChange() {
     noMsg.classList.add('hidden');
   }
 
+  updateScopePanel(level);
   updateSlotUI();
   updatePrice();
   hidePaymentSection();
   onSlotChange();
+}
+
+function updateScopePanel(level) {
+  const panel = document.getElementById('scope-panel');
+  const list = document.getElementById('scope-list');
+  const heading = document.getElementById('scope-heading');
+  const sub = document.getElementById('scope-sub');
+  if (!panel || !list) return;
+
+  const content = SCOPE_CONTENT[level];
+  if (!content) {
+    panel.classList.add('hidden');
+    list.innerHTML = '';
+    return;
+  }
+
+  heading.textContent = content.heading;
+  sub.textContent = content.subtitle;
+  list.innerHTML = content.items
+    .map(topic => '<li>' + escapeHtml(topic) + '</li>')
+    .join('');
+  panel.classList.remove('hidden');
 }
 
 document.querySelectorAll('.slot-card').forEach(card => {

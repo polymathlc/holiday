@@ -610,10 +610,17 @@
 
   .submit-btn:active:not(:disabled) { transform: translateY(0); }
 
-  .submit-btn:disabled {
+  .submit-btn:disabled,
+  .submit-btn[aria-disabled="true"] {
     background: var(--gray-300);
     color: var(--gray-500);
     cursor: not-allowed;
+  }
+
+  .submit-btn[aria-disabled="true"]:hover {
+    background: var(--gray-300);
+    transform: none;
+    box-shadow: none;
   }
 
   .submit-btn .spinner {
@@ -855,6 +862,89 @@
   }
 
   .hidden { display: none !important; }
+
+  /* ══════════════════════════════════════════════════════════
+     LOCKED STEP + INLINE HINT
+  ══════════════════════════════════════════════════════════ */
+  .card.locked {
+    position: relative;
+    opacity: 0.55;
+    pointer-events: none;
+    filter: grayscale(15%);
+  }
+
+  .card.locked .card-title::after {
+    content: '\01F512';
+    margin-left: auto;
+    font-size: 14px;
+    opacity: 0.7;
+  }
+
+  .card.locked .field input,
+  .card.locked .field select {
+    background: var(--gray-100);
+  }
+
+  .step-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--gray-600);
+    padding: 10px 14px;
+    background: var(--gray-50);
+    border: 1px dashed var(--gray-300);
+    border-radius: var(--radius-sm);
+    margin-top: 14px;
+    line-height: 1.55;
+  }
+
+  .step-hint::before {
+    content: 'i';
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--gray-400);
+    color: var(--white);
+    font-size: 10px;
+    font-weight: 700;
+    font-style: italic;
+    font-family: serif;
+    margin-top: 1px;
+  }
+
+  .step-hint.warn {
+    color: var(--danger);
+    background: var(--danger-bg);
+    border: 1px solid var(--danger-border);
+    font-weight: 600;
+  }
+
+  .step-hint.warn::before {
+    background: var(--danger);
+    content: '!';
+    font-style: normal;
+    font-family: var(--font);
+  }
+
+  .step-hint.ok {
+    color: var(--success);
+    background: var(--success-bg);
+    border: 1px solid var(--success-border);
+  }
+
+  .step-hint.ok::before {
+    background: var(--success);
+    content: '\2713';
+    font-family: var(--font);
+    font-style: normal;
+  }
+
+  .step-hint.hidden { display: none !important; }
 </style>
 </head>
 <body>
@@ -886,10 +976,11 @@
   <!-- HEADER -->
   <header class="header fade-in">
     <img
-      src="https://www.dropbox.com/scl/fi/h40yjlyg8ldefwfaa3dib/polymath-logo-sticker.png?rlkey=o1ra4taqy79gt9t8u096v82zj&raw=1"
+      src="https://dl.dropboxusercontent.com/scl/fi/h40yjlyg8ldefwfaa3dib/polymath-logo-sticker.png?rlkey=o1ra4taqy79gt9t8u096v82zj"
       alt="Polymath Learning Centre"
       class="header-logo"
-      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+      onerror="this.onerror=null;this.src='https://www.dropbox.com/scl/fi/h40yjlyg8ldefwfaa3dib/polymath-logo-sticker.png?rlkey=o1ra4taqy79gt9t8u096v82zj&raw=1';"
     >
     <div class="header-badge">2026 June Holiday Programme</div>
     <h1>Science Workshop Registration</h1>
@@ -929,11 +1020,11 @@
       <div class="card-title"><span class="step-num">1</span> Student &amp; Parent Details</div>
       <div class="field">
         <label>Student's Full Name <span class="req">*</span></label>
-        <input type="text" id="studentName" placeholder="e.g. Tan Wei Lin" required>
+        <input type="text" id="studentName" placeholder="Full name" title="Enter the student's full name as per NRIC / birth certificate" required>
       </div>
       <div class="field">
         <label>Parent's Full Name <span class="req">*</span></label>
-        <input type="text" id="parentName" placeholder="e.g. Tan Ah Kow" required>
+        <input type="text" id="parentName" placeholder="Full name" title="Parent's name — this will appear in the PayNow reference so we can match your payment" required>
       </div>
       <div class="field">
         <label>Email Address <span class="req">*</span></label>
@@ -942,30 +1033,39 @@
       </div>
     </div>
 
-    <!-- Step 2 -->
-    <div class="card fade-in" style="animation-delay:0.16s">
-      <div class="card-title"><span class="step-num">2</span> Programme Selection</div>
+    <!-- Step 2 — Level -->
+    <div class="card fade-in locked" id="level-card" style="animation-delay:0.16s">
+      <div class="card-title"><span class="step-num">2</span> Select Level</div>
       <div class="field">
-        <label>Select Level <span class="req">*</span></label>
-        <select id="level" required>
+        <label>Which level is the student in? <span class="req">*</span></label>
+        <select id="level" required title="Pick the student's current primary level">
           <option value="" disabled selected>Choose a level</option>
           <option value="P6">P6 Science</option>
           <option value="P5">P5 Science</option>
         </select>
+        <div class="hint">This determines which dates and slots are available.</div>
       </div>
+      <div class="step-hint" id="hint-level">Complete Step 1 (student & parent details) to unlock this step.</div>
+    </div>
+
+    <!-- Step 3 — Class Mode -->
+    <div class="card fade-in locked" id="mode-card" style="animation-delay:0.18s">
+      <div class="card-title"><span class="step-num">3</span> Class Mode</div>
       <div class="field">
-        <label>Class Mode <span class="req">*</span></label>
-        <select id="mode" required>
+        <label>How would you like to attend? <span class="req">*</span></label>
+        <select id="mode" required title="Online classes run on Zoom; physical classes run at our Clementi centre (max 12 students)">
           <option value="" disabled selected>Choose class mode</option>
           <option value="Online">Online — $240</option>
           <option value="Physical">Physical @ Clementi — $280 (max 12 students)</option>
         </select>
+        <div class="hint">Online: attend on Zoom from anywhere. Physical: in-person at Clementi (limited seats).</div>
       </div>
+      <div class="step-hint" id="hint-mode">Select a level in Step 2 to unlock this step.</div>
     </div>
 
-    <!-- Step 3 -->
-    <div class="card fade-in" style="animation-delay:0.2s">
-      <div class="card-title"><span class="step-num">3</span> Choose Your Slot <span class="req">*</span></div>
+    <!-- Step 4 — Slot -->
+    <div class="card fade-in locked" id="slot-card" style="animation-delay:0.2s">
+      <div class="card-title"><span class="step-num">4</span> Choose Your Slot <span class="req">*</span></div>
       <p style="font-size:12px;color:var(--gray-500);margin-bottom:18px;">Choose <strong style="color:var(--black)">1 slot only</strong>. Slots update based on your selected level.</p>
 
       <div id="p6-slots" class="slot-grid slot-hidden">
@@ -1010,12 +1110,14 @@
         <div class="price-label">Amount to pay</div>
         <div class="price-amount" id="price-amount">$0</div>
       </div>
+
+      <div class="step-hint" id="hint-slot">Select level and class mode in the previous steps to see available slots.</div>
     </div>
 
-    <!-- Step 4 -->
+    <!-- Step 5 — Payment -->
     <div class="card fade-in hidden" id="payment-card" style="animation-delay:0.24s">
-      <div class="card-title"><span class="step-num">4</span> PayNow Payment</div>
-      <p style="font-size:13px;color:var(--gray-600);margin-bottom:4px;">Scan the QR code below to pay via PayNow. Amount is pre-filled.</p>
+      <div class="card-title"><span class="step-num">5</span> PayNow Payment</div>
+      <p style="font-size:13px;color:var(--gray-600);margin-bottom:4px;">Scan the QR code below to pay via PayNow. Amount and reference are pre-filled.</p>
 
       <div class="qr-section">
         <p>PayNow to <strong style="color:var(--black)">Polymath Learning Centre</strong></p>
@@ -1027,7 +1129,8 @@
           <button type="button" class="btn-qr download" onclick="downloadQR()">Download QR</button>
         </div>
         <div class="paynow-info">
-          UEN: <strong>T16LL2365E</strong> &nbsp;&middot;&nbsp; Amount: <strong id="qr-amount-label">$0</strong>
+          UEN: <strong>T16LL2365E</strong> &nbsp;&middot;&nbsp; Amount: <strong id="qr-amount-label">$0</strong><br>
+          Reference: <strong id="qr-ref-label">—</strong>
         </div>
       </div>
 
@@ -1045,9 +1148,9 @@
       </div>
     </div>
 
-    <!-- Step 5 -->
+    <!-- Step 6 — Confirm -->
     <div class="card fade-in hidden" id="confirm-card" style="animation-delay:0.28s">
-      <div class="card-title"><span class="step-num">5</span> Confirm &amp; Submit</div>
+      <div class="card-title"><span class="step-num">6</span> Confirm &amp; Submit</div>
 
       <div class="disclaimer-box">
         <h4>Important — Please Read</h4>
@@ -1068,7 +1171,7 @@
 
     <!-- Submit -->
     <div class="fade-in hidden" id="submit-wrapper" style="animation-delay:0.32s">
-      <button type="button" class="submit-btn" id="submitBtn" onclick="submitForm()" disabled>
+      <button type="button" class="submit-btn" id="submitBtn" onclick="submitForm()" aria-disabled="true" title="Fill in all required fields to submit">
         <span class="btn-text">Submit Registration</span>
         <div class="spinner"></div>
       </button>
@@ -1099,6 +1202,17 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const storageService = firebase.storage();
+
+// ─── Notification Recipients ───
+// These addresses receive a notification for every enrollment plus a full
+// summary of all signed-up students. Emails are dispatched via the Firebase
+// "Trigger Email" extension, which watches the `mail` collection and sends
+// any document added to it.
+const NOTIFICATION_EMAILS = [
+  'chungzhikai@gmail.com',
+  'admin@polymathlc.com.sg',
+  'elsielcr@gmail.com'
+];
 
 // ─── Slot Config ───
 const PHYSICAL_MAX = 12;
@@ -1187,13 +1301,37 @@ function updateAdminPanel() {
 const PAYNOW_UEN = 'T16LL2365E';
 const MERCHANT_NAME = 'POLYMATH LEARNING';
 
+// Short slot codes used in the PayNow reference so the payee can see
+// the level and exact dates at a glance (e.g. "P6JUN02").
+const SLOT_REF_CODE = {
+  'P6-S1': 'P6JUN02',
+  'P6-S2': 'P6JUN06',
+  'P5-S1': 'P5JUN09',
+  'P5-S2': 'P5JUN13'
+};
+
+// PayNow reference (EMV tag 62.05) is capped at 25 chars and should be
+// restricted to printable alphanumeric + spaces for maximum compatibility.
+function buildPaymentReference(slotVal, parentName) {
+  const slotCode = SLOT_REF_CODE[slotVal] || 'JUNSCI26';
+  const cleanName = String(parentName || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const maxNameLen = Math.max(0, 25 - slotCode.length - 1);
+  const truncName = cleanName.slice(0, maxNameLen).trim();
+  const ref = truncName ? slotCode + ' ' + truncName : slotCode;
+  return ref.slice(0, 25);
+}
+
 function buildTLV(tag, value) {
   return tag + value.length.toString().padStart(2, '0') + value;
 }
 
-function buildPayNowString(amount) {
+function buildPayNowString(amount, reference) {
   const mai26 = buildTLV('00', 'SG.PAYNOW') + buildTLV('01', '2') + buildTLV('02', PAYNOW_UEN) + buildTLV('03', '0');
-  const adt62 = buildTLV('05', 'JUNESCI2026');
+  const adt62 = buildTLV('05', reference || 'JUNESCI2026');
 
   let payload = '';
   payload += buildTLV('00', '01');
@@ -1308,6 +1446,7 @@ function downloadQR() {
 // ─── Form Logic ───
 const levelSelect = document.getElementById('level');
 const modeSelect = document.getElementById('mode');
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 levelSelect.addEventListener('change', onLevelOrModeChange);
 modeSelect.addEventListener('change', onLevelOrModeChange);
@@ -1357,7 +1496,7 @@ function onSlotChange() {
   const selectedSlot = document.querySelector('input[name="slot"]:checked');
   if (selectedSlot && modeSelect.value) showPaymentSection();
   else hidePaymentSection();
-  updateSubmitState();
+  updateProgression();
 }
 
 function getPrice() {
@@ -1375,11 +1514,18 @@ function updatePrice() {
 function showPaymentSection() {
   const price = getPrice();
   if (price <= 0) return;
+  const slotInput = document.querySelector('input[name="slot"]:checked');
+  if (!slotInput) return;
+  const parentName = document.getElementById('parentName').value.trim();
+  const reference = buildPaymentReference(slotInput.value, parentName);
+
   document.getElementById('payment-card').classList.remove('hidden');
   document.getElementById('confirm-card').classList.remove('hidden');
   document.getElementById('submit-wrapper').classList.remove('hidden');
-  generateQR(buildPayNowString(price));
+  generateQR(buildPayNowString(price, reference));
   document.getElementById('qr-amount-label').textContent = '$' + price;
+  const refEl = document.getElementById('qr-ref-label');
+  if (refEl) refEl.textContent = reference;
 }
 
 function hidePaymentSection() {
@@ -1406,45 +1552,299 @@ function handleFileSelect(input) {
     area.classList.remove('has-file');
     nameEl.textContent = '';
   }
-  updateSubmitState();
+  updateProgression();
 }
 
-document.getElementById('agreeCheck').addEventListener('change', updateSubmitState);
+document.getElementById('agreeCheck').addEventListener('change', updateProgression);
 
-function updateSubmitState() {
+// ─── Progressive Disclosure & Hints ───
+// Each step is locked until the previous one is completed. Inline hints tell
+// the user exactly what's missing. The submit button stays disabled until the
+// full chain is satisfied, and its tooltip always describes the next action.
+function getFormState() {
+  const studentName = document.getElementById('studentName').value.trim();
+  const parentName = document.getElementById('parentName').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const detailsOk = studentName && parentName && EMAIL_RE.test(email);
+  const level = levelSelect.value;
+  const mode = modeSelect.value;
+  const slot = document.querySelector('input[name="slot"]:checked');
+  const receipt = document.getElementById('receiptFile').files[0];
+  const agreed = document.getElementById('agreeCheck').checked;
+  return { studentName, parentName, email, detailsOk, level, mode, slot, receipt, agreed };
+}
+
+function setHint(id, message, variant) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = message;
+  el.classList.remove('warn', 'ok', 'hidden');
+  if (variant === 'hidden') el.classList.add('hidden');
+  else if (variant === 'warn') el.classList.add('warn');
+  else if (variant === 'ok') el.classList.add('ok');
+}
+
+function setCardLocked(id, locked) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('locked', !!locked);
+}
+
+function getFirstMissingMessage(state) {
+  if (!state.studentName) return "Please enter the student's full name (Step 1).";
+  if (!state.parentName) return "Please enter the parent's full name (Step 1).";
+  if (!state.email) return 'Please enter a contact email (Step 1).';
+  if (!EMAIL_RE.test(state.email)) return 'Please enter a valid email address (Step 1).';
+  if (!state.level) return 'Please select a level (Step 2).';
+  if (!state.mode) return 'Please select a class mode (Step 3).';
+  if (!state.slot) return 'Please choose a time slot (Step 4).';
+  if (!state.receipt) return 'Please upload your PayNow receipt (Step 5).';
+  if (!state.agreed) return 'Please tick the confirmation checkbox (Step 6).';
+  return '';
+}
+
+function updateProgression() {
+  const s = getFormState();
+
+  // Lock/unlock each step card based on prerequisite completion.
+  setCardLocked('level-card', !s.detailsOk);
+  setCardLocked('mode-card', !s.detailsOk || !s.level);
+  setCardLocked('slot-card', !s.detailsOk || !s.level || !s.mode);
+
+  // Step hint: Level
+  if (!s.detailsOk) {
+    setHint('hint-level', 'Complete Step 1 (student & parent details) to unlock this step.', 'warn');
+  } else if (!s.level) {
+    setHint('hint-level', 'Select P5 or P6 Science to continue.', 'warn');
+  } else {
+    setHint('hint-level', 'Level selected: ' + (s.level === 'P6' ? 'P6 Science' : 'P5 Science'), 'ok');
+  }
+
+  // Step hint: Mode
+  if (!s.detailsOk || !s.level) {
+    setHint('hint-mode', 'Select a level in Step 2 to unlock this step.', 'warn');
+  } else if (!s.mode) {
+    setHint('hint-mode', 'Choose Online ($240) or Physical @ Clementi ($280).', 'warn');
+  } else {
+    setHint('hint-mode', 'Class mode selected: ' + s.mode + ' — $' + getPrice(), 'ok');
+  }
+
+  // Step hint: Slot
+  if (!s.detailsOk || !s.level || !s.mode) {
+    setHint('hint-slot', 'Select level and class mode in the previous steps to see available slots.', 'warn');
+  } else if (!s.slot) {
+    setHint('hint-slot', 'Choose one date slot above to proceed to payment.', 'warn');
+  } else {
+    setHint('hint-slot', 'Slot selected: ' + SLOT_CONFIG[s.slot.value].label, 'ok');
+  }
+
+  // Submit button state + dynamic tooltip so the user always knows what's next.
+  // We use aria-disabled (not the native `disabled` attribute) so clicks still
+  // fire and can be intercepted to show a helpful toast.
   const btn = document.getElementById('submitBtn');
-  const ok = document.getElementById('studentName').value.trim()
-    && document.getElementById('parentName').value.trim()
-    && document.getElementById('email').value.trim()
-    && levelSelect.value
-    && modeSelect.value
-    && document.querySelector('input[name="slot"]:checked')
-    && document.getElementById('receiptFile').files[0]
-    && document.getElementById('agreeCheck').checked;
-  btn.disabled = !ok;
+  const missing = getFirstMissingMessage(s);
+  btn.setAttribute('aria-disabled', missing ? 'true' : 'false');
+  btn.title = missing || 'Submit your registration';
+
+  // If the payment section is showing and the parent name changes, the QR
+  // reference must be regenerated — it embeds the parent name.
+  if (!document.getElementById('payment-card').classList.contains('hidden') && s.slot) {
+    const refEl = document.getElementById('qr-ref-label');
+    const newRef = buildPaymentReference(s.slot.value, s.parentName);
+    if (refEl && refEl.textContent !== newRef) {
+      generateQR(buildPayNowString(getPrice(), newRef));
+      refEl.textContent = newRef;
+    }
+  }
 }
+
+// Back-compat alias — older code paths still call updateSubmitState.
+function updateSubmitState() { updateProgression(); }
 
 ['studentName', 'parentName', 'email'].forEach(id => {
-  document.getElementById(id).addEventListener('input', updateSubmitState);
+  document.getElementById(id).addEventListener('input', updateProgression);
 });
+
+// Kick off the initial locked/unlocked state after DOM is ready.
+updateProgression();
+
+// ─── Email Notifications ───
+// Emails are queued as documents in the `mail` collection and delivered by
+// the Firebase "Trigger Email" Firestore extension. Ensure that extension is
+// installed on the `mathgen--app` project for delivery to occur.
+function escapeHtml(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[ch]));
+}
+
+function formatSgTimestamp(date) {
+  try {
+    return date.toLocaleString('en-SG', { timeZone: 'Asia/Singapore', hour12: true });
+  } catch (e) {
+    return date.toString();
+  }
+}
+
+async function sendEnrollmentNotification(data) {
+  const rows = [
+    ['Student Name', data.studentName],
+    ['Parent Name', data.parentName],
+    ['Parent Email', data.email],
+    ['Level', data.level],
+    ['Class Mode', data.mode],
+    ['Slot', data.slotLabel],
+    ['Amount Paid', '$' + data.price],
+    ['Receipt', data.receiptURL
+      ? '<a href="' + escapeHtml(data.receiptURL) + '">View uploaded receipt</a>'
+      : '—'],
+    ['Submitted At', formatSgTimestamp(new Date())]
+  ];
+
+  const htmlRows = rows.map(([label, val]) => {
+    const safeVal = label === 'Receipt' ? val : escapeHtml(val);
+    return '<tr>'
+      + '<td style="padding:8px 12px;border:1px solid #e5e5e5;background:#f5f5f5;font-weight:700;width:35%;">' + label + '</td>'
+      + '<td style="padding:8px 12px;border:1px solid #e5e5e5;">' + safeVal + '</td>'
+      + '</tr>';
+  }).join('');
+
+  const html = ''
+    + '<div style="font-family:Arial,Helvetica,sans-serif;color:#171717;max-width:640px;">'
+    + '<h2 style="margin:0 0 16px;">New Enrollment — Polymath Holiday Programme</h2>'
+    + '<p style="color:#525252;font-size:13px;margin:0 0 16px;">A new student has signed up for the 2026 June Holiday Programme.</p>'
+    + '<table style="border-collapse:collapse;font-size:14px;width:100%;">' + htmlRows + '</table>'
+    + '</div>';
+
+  const text = rows
+    .map(([label, val]) => label + ': ' + String(val).replace(/<[^>]+>/g, ''))
+    .join('\n');
+
+  await db.collection('mail').add({
+    to: NOTIFICATION_EMAILS,
+    message: {
+      subject: 'New Enrollment: ' + data.studentName + ' — ' + data.slotLabel,
+      html: html,
+      text: text
+    }
+  });
+}
+
+async function sendRegistrationSummary() {
+  const snapshot = await db.collection('june2026_registrations')
+    .orderBy('submittedAt', 'asc')
+    .get();
+
+  const registrations = [];
+  snapshot.forEach(doc => registrations.push(doc.data()));
+
+  const grouped = {};
+  Object.keys(SLOT_CONFIG).forEach(k => { grouped[k] = []; });
+  registrations.forEach(r => {
+    if (r.slot && grouped[r.slot]) grouped[r.slot].push(r);
+  });
+
+  let html = ''
+    + '<div style="font-family:Arial,Helvetica,sans-serif;color:#171717;max-width:720px;">'
+    + '<h2 style="margin:0 0 8px;">Registration Summary — Polymath Holiday Programme</h2>'
+    + '<p style="color:#525252;font-size:13px;margin:0 0 20px;">'
+    + 'Total signed-up students: <strong>' + registrations.length + '</strong>'
+    + ' &nbsp;·&nbsp; Generated ' + escapeHtml(formatSgTimestamp(new Date()))
+    + '</p>';
+
+  Object.keys(SLOT_CONFIG).forEach(slotId => {
+    const list = grouped[slotId];
+    const physCount = list.filter(r => (r.mode || '').toLowerCase() === 'physical').length;
+    const onlineCount = list.filter(r => (r.mode || '').toLowerCase() === 'online').length;
+
+    html += '<h3 style="margin:22px 0 4px;font-size:15px;">' + escapeHtml(SLOT_CONFIG[slotId].label) + '</h3>'
+      + '<p style="color:#525252;font-size:12px;margin:0 0 8px;">'
+      + 'Physical: ' + physCount + ' / ' + PHYSICAL_MAX
+      + ' &nbsp;·&nbsp; Online: ' + onlineCount
+      + ' &nbsp;·&nbsp; Total: ' + list.length
+      + '</p>';
+
+    if (list.length === 0) {
+      html += '<p style="color:#a3a3a3;font-size:12px;font-style:italic;margin:0 0 8px;">No registrations yet.</p>';
+      return;
+    }
+
+    html += '<table style="border-collapse:collapse;font-size:13px;width:100%;">'
+      + '<thead><tr>'
+      + '<th style="padding:6px 10px;border:1px solid #e5e5e5;background:#eeeeee;text-align:left;">#</th>'
+      + '<th style="padding:6px 10px;border:1px solid #e5e5e5;background:#eeeeee;text-align:left;">Student</th>'
+      + '<th style="padding:6px 10px;border:1px solid #e5e5e5;background:#eeeeee;text-align:left;">Parent</th>'
+      + '<th style="padding:6px 10px;border:1px solid #e5e5e5;background:#eeeeee;text-align:left;">Email</th>'
+      + '<th style="padding:6px 10px;border:1px solid #e5e5e5;background:#eeeeee;text-align:left;">Mode</th>'
+      + '<th style="padding:6px 10px;border:1px solid #e5e5e5;background:#eeeeee;text-align:left;">Price</th>'
+      + '<th style="padding:6px 10px;border:1px solid #e5e5e5;background:#eeeeee;text-align:left;">Receipt</th>'
+      + '</tr></thead><tbody>';
+
+    list.forEach((r, idx) => {
+      html += '<tr>'
+        + '<td style="padding:6px 10px;border:1px solid #e5e5e5;">' + (idx + 1) + '</td>'
+        + '<td style="padding:6px 10px;border:1px solid #e5e5e5;">' + escapeHtml(r.studentName) + '</td>'
+        + '<td style="padding:6px 10px;border:1px solid #e5e5e5;">' + escapeHtml(r.parentName) + '</td>'
+        + '<td style="padding:6px 10px;border:1px solid #e5e5e5;">' + escapeHtml(r.email) + '</td>'
+        + '<td style="padding:6px 10px;border:1px solid #e5e5e5;">' + escapeHtml(r.mode) + '</td>'
+        + '<td style="padding:6px 10px;border:1px solid #e5e5e5;">$' + escapeHtml(r.price || 0) + '</td>'
+        + '<td style="padding:6px 10px;border:1px solid #e5e5e5;">'
+        + (r.receiptURL ? '<a href="' + escapeHtml(r.receiptURL) + '">View</a>' : '—')
+        + '</td>'
+        + '</tr>';
+    });
+
+    html += '</tbody></table>';
+  });
+
+  html += '</div>';
+
+  const textLines = ['Polymath Holiday Programme — Registration Summary',
+    'Total: ' + registrations.length,
+    ''];
+  Object.keys(SLOT_CONFIG).forEach(slotId => {
+    const list = grouped[slotId];
+    textLines.push(SLOT_CONFIG[slotId].label + ' (' + list.length + ')');
+    list.forEach((r, idx) => {
+      textLines.push('  ' + (idx + 1) + '. ' + r.studentName
+        + ' — ' + r.parentName + ' <' + r.email + '> — ' + r.mode + ' — $' + (r.price || 0));
+    });
+    textLines.push('');
+  });
+
+  await db.collection('mail').add({
+    to: NOTIFICATION_EMAILS,
+    message: {
+      subject: 'Polymath Holiday Programme — Registration Summary ('
+        + registrations.length + ' total)',
+      html: html,
+      text: textLines.join('\n')
+    }
+  });
+}
 
 // ─── Submit ───
 async function submitForm() {
   const btn = document.getElementById('submitBtn');
-  if (btn.disabled) return;
+  if (btn.disabled || btn.classList.contains('loading')) return;
 
-  const studentName = document.getElementById('studentName').value.trim();
-  const parentName = document.getElementById('parentName').value.trim();
-  const email = document.getElementById('email').value.trim();
-  const level = levelSelect.value;
-  const mode = modeSelect.value;
-  const slotVal = document.querySelector('input[name="slot"]:checked').value;
-  const receiptFile = document.getElementById('receiptFile').files[0];
-
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    showToast('Please enter a valid email address.', false);
+  // If any required field is missing, show a helpful toast instead of silently
+  // doing nothing. This is also what makes the click-through-locked-state
+  // tooltip-style guidance work (aria-disabled button still fires clicks).
+  const state = getFormState();
+  const missing = getFirstMissingMessage(state);
+  if (missing) {
+    showToast(missing, false);
     return;
   }
+
+  const { studentName, parentName, email, level, mode } = state;
+  const slotVal = state.slot.value;
+  const receiptFile = state.receipt;
 
   if (mode === 'Physical' && (slotCounts[slotVal]?.physical || 0) >= PHYSICAL_MAX) {
     showToast('Physical seats for this slot are full. Please choose another option.', false);
@@ -1452,7 +1852,7 @@ async function submitForm() {
   }
 
   btn.classList.add('loading');
-  btn.disabled = true;
+  btn.setAttribute('aria-disabled', 'true');
 
   try {
     const timestamp = Date.now();
@@ -1472,6 +1872,22 @@ async function submitForm() {
       status: 'pending'
     });
 
+    // Fire-and-forget email notifications. A failure here must NOT block
+    // or roll back the enrollment that just succeeded, so we swallow errors
+    // and only log them to the console for debugging.
+    try {
+      await sendEnrollmentNotification({
+        studentName, parentName, email, level, mode,
+        slot: slotVal,
+        slotLabel: SLOT_CONFIG[slotVal].label,
+        price: getPrice(),
+        receiptURL
+      });
+      await sendRegistrationSummary();
+    } catch (mailErr) {
+      console.error('Email notification error:', mailErr);
+    }
+
     document.getElementById('success-programme').textContent =
       level + ' Science Workshop — ' + SLOT_CONFIG[slotVal].label;
     document.getElementById('success-overlay').classList.add('show');
@@ -1479,7 +1895,7 @@ async function submitForm() {
     console.error('Submission error:', err);
     showToast('Submission failed: ' + (err.message || 'Please try again.'), false);
     btn.classList.remove('loading');
-    btn.disabled = false;
+    updateProgression();
   }
 }
 

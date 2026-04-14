@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polymath Learning Centre — 2026 June Holiday Programme Registration</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<style>
+  /* ══════════════════════════════════════════════════════════
+     RESET & VARIABLES
+  ══════════════════════════════════════════════════════════ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --white: #ffffff;
+    --gray-50: #fafafa;
+    --gray-100: #f5f5f5;
+    --gray-150: #eeeeee;
+    --gray-200: #e5e5e5;
+    --gray-300: #d4d4d4;
+    --gray-400: #a3a3a3;
+    --gray-500: #737373;
+    --gray-600: #525252;
+    --gray-700: #404040;
+    --gray-800: #262626;
+    --gray-900: #171717;
+    --black: #000000;
+
+    --accent: #000000;
+    --accent-hover: #262626;
+    --success: #16a34a;
+    --success-bg: #f0fdf4;
+    --success-border: #bbf7d0;
+    --danger: #dc2626;
+    --danger-bg: #fef2f2;
+    --danger-border: #fecaca;
+
+    --font: 'Century Gothic', 'CenturyGothic', 'AppleGothic', 'Gill Sans', 'Gill Sans MT', sans-serif;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-xs: 4px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+    --shadow-lg: 0 10px 25px rgba(0,0,0,0.08), 0 4px 10px rgba(0,0,0,0.04);
+    --transition: 0.2s ease;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font);
+    background: var(--gray-100);
+    color: var(--gray-900);
+    min-height: 100vh;
+    line-height: 1.65;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection { background: var(--black); color: var(--white); }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--gray-100); }
+  ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--gray-500); }
+
+  /* ══════════════════════════════════════════════════════════
+     PAGE WRAPPER
+  ══════════════════════════════════════════════════════════ */
+  .page-wrapper {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 32px 16px 80px;
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     HEADER
+  ══════════════════════════════════════════════════════════ */
+  .header {
+    text-align: center;
+    padding: 48px 24px 40px;
+    margin-bottom: 28px;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 2px;
+    background: var(--black);
+  }
+
+  .header-logo {
+    width: 100px;
+    height: auto;
+    margin: 0 auto 20px;
+    display: block;
+    object-fit: contain;
+  }
+
+  .header-badge {
+    display: inline-block;
+    background: var(--black);
+    color: var(--white);
+    font-family: var(--font);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    padding: 5px 16px;
+    border-radius: 2px;
+    margin-bottom: 20px;
+  }
+
+  .header h1 {
+    font-family: var(--font);
+    font-size: clamp(22px, 5vw, 30px);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+    margin-bottom: 4px;
+    color: var(--black);
+  }
+
+  .header h2 {
+    font-family: var(--font);
+    font-size: clamp(14px, 3vw, 17px);
+    font-weight: 400;
+    color: var(--gray-500);
+    margin-bottom: 16px;
+    letter-spacing: 0.3px;
+  }
+
+  .header p {
+    color: var(--gray-500);
+    font-size: 13px;
+    max-width: 420px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     INFO STRIP
+  ══════════════════════════════════════════════════════════ */
+  .info-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--gray-200);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 28px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .info-cell {
+    background: var(--white);
+    padding: 16px 12px;
+    text-align: center;
+  }
+
+  .info-cell .info-icon {
+    font-size: 18px;
+    margin-bottom: 6px;
+    filter: grayscale(100%);
+  }
+
+  .info-cell .info-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--gray-400);
+    margin-bottom: 2px;
+  }
+
+  .info-cell .info-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--black);
+  }
+
+  @media (max-width: 500px) {
+    .info-strip { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     CARD / SECTION
+  ══════════════════════════════════════════════════════════ */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+
+  .card-title {
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    color: var(--black);
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .card-title .step-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--black);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     FORM FIELDS
+  ══════════════════════════════════════════════════════════ */
+  .field { margin-bottom: 18px; }
+  .field:last-child { margin-bottom: 0; }
+
+  .field label {
+    display: block;
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--gray-600);
+    margin-bottom: 6px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .field label .req { color: var(--danger); margin-left: 1px; }
+
+  .field input[type="text"],
+  .field input[type="email"],
+  .field select {
+    width: 100%;
+    padding: 11px 14px;
+    background: var(--white);
+    border: 1.5px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    color: var(--gray-900);
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 600;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    outline: none;
+  }
+
+  .field input:focus,
+  .field select:focus {
+    border-color: var(--black);
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.06);
+  }
+
+  .field input::placeholder { color: var(--gray-400); font-weight: 400; }
+
+  .field select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23737373' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+  }
+
+  .field select option { background: var(--white); color: var(--gray-900); }
+
+  .field .hint {
+    font-size: 11px;
+    color: var(--gray-400);
+    margin-top: 4px;
+    letter-spacing: 0.2px;
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     SLOT CARDS
+  ══════════════════════════════════════════════════════════ */
+  .slot-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  @media (max-width: 480px) { .slot-grid { grid-template-columns: 1fr; } }
+
+  .slot-card {
+    position: relative;
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    padding: 18px 16px;
+    cursor: pointer;
+    transition: all var(--transition);
+    background: var(--white);
+    text-align: center;
+  }
+
+  .slot-card:hover { border-color: var(--gray-400); background: var(--gray-50); }
+
+  .slot-card.selected {
+    border-color: var(--black);
+    background: var(--gray-50);
+    box-shadow: 0 0 0 1px var(--black);
+  }
+
+  .slot-card.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+    cursor: not-allowed;
+  }
+
+  .slot-card.disabled::after {
+    content: 'FULL';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--gray-800);
+    color: var(--white);
+    font-family: var(--font);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 8px;
+    border-radius: 2px;
+  }
+
+  .slot-card input[type="radio"] { display: none; }
+
+  .slot-card .slot-dates {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--black);
+    margin-bottom: 2px;
+    letter-spacing: -0.3px;
+  }
+
+  .slot-card .slot-days {
+    font-size: 12px;
+    color: var(--gray-500);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  .slot-card .slot-time {
+    font-size: 13px;
+    color: var(--gray-600);
+    font-weight: 600;
+  }
+
+  .slot-card .slot-seats {
+    margin-top: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  .slot-card .slot-seats.low { color: var(--danger); }
+
+  .slot-hidden { display: none; }
+
+  /* ══════════════════════════════════════════════════════════
+     PRICE DISPLAY
+  ══════════════════════════════════════════════════════════ */
+  .price-display {
+    background: var(--gray-50);
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 18px;
+  }
+
+  .price-display .price-label {
+    font-size: 12px;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+  }
+
+  .price-display .price-amount {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--black);
+    letter-spacing: -1px;
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     QR CODE SECTION
+  ══════════════════════════════════════════════════════════ */
+  .qr-section {
+    text-align: center;
+    padding: 28px 20px;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    margin-top: 18px;
+  }
+
+  .qr-section > p {
+    font-size: 12px;
+    color: var(--gray-500);
+    margin-bottom: 18px;
+  }
+
+  #qr-canvas-wrapper {
+    display: inline-block;
+    background: var(--white);
+    padding: 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--gray-200);
+    box-shadow: var(--shadow-md);
+    margin-bottom: 18px;
+  }
+
+  #qr-canvas-wrapper canvas,
+  #qr-canvas-wrapper img { display: block; }
+
+  .qr-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-qr {
+    padding: 9px 18px;
+    border-radius: var(--radius-xs);
+    border: 1.5px solid var(--black);
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+
+  .btn-qr.copy { background: var(--black); color: var(--white); }
+  .btn-qr.copy:hover { background: var(--gray-800); }
+  .btn-qr.download { background: var(--white); color: var(--black); }
+  .btn-qr.download:hover { background: var(--gray-100); }
+
+  .paynow-info {
+    margin-top: 14px;
+    font-size: 11px;
+    color: var(--gray-400);
+  }
+
+  .paynow-info strong { color: var(--gray-700); }
+
+  /* ══════════════════════════════════════════════════════════
+     FILE UPLOAD
+  ══════════════════════════════════════════════════════════ */
+  .upload-area {
+    border: 1.5px dashed var(--gray-300);
+    border-radius: var(--radius-sm);
+    padding: 30px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition);
+    position: relative;
+    background: var(--gray-50);
+  }
+
+  .upload-area:hover { border-color: var(--gray-500); background: var(--white); }
+
+  .upload-area.has-file {
+    border-color: var(--success);
+    border-style: solid;
+    background: var(--success-bg);
+  }
+
+  .upload-area input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .upload-icon { font-size: 28px; margin-bottom: 6px; filter: grayscale(100%); }
+  .upload-text { font-size: 13px; color: var(--gray-500); }
+  .upload-text strong { color: var(--black); }
+
+  .upload-filename {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--success);
+    font-weight: 700;
+    display: none;
+  }
+
+  .upload-area.has-file .upload-filename { display: block; }
+
+  /* ══════════════════════════════════════════════════════════
+     DISCLAIMER & CHECKBOX
+  ══════════════════════════════════════════════════════════ */
+  .disclaimer-box {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    padding: 18px 20px;
+    margin-bottom: 20px;
+  }
+
+  .disclaimer-box h4 {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--gray-700);
+    margin-bottom: 10px;
+  }
+
+  .disclaimer-box ul { list-style: none; }
+
+  .disclaimer-box li {
+    font-size: 12px;
+    color: var(--gray-600);
+    padding: 4px 0 4px 20px;
+    position: relative;
+    line-height: 1.6;
+  }
+
+  .disclaimer-box li::before {
+    content: '\2014';
+    position: absolute;
+    left: 0;
+    color: var(--gray-400);
+    font-weight: 700;
+  }
+
+  .disclaimer-box li strong { color: var(--danger); }
+
+  .checkbox-field {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+  }
+
+  .checkbox-field input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: var(--black);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .checkbox-field span { font-size: 13px; color: var(--gray-600); line-height: 1.6; }
+  .checkbox-field span strong { color: var(--danger); }
+
+  /* ══════════════════════════════════════════════════════════
+     SUBMIT BUTTON
+  ══════════════════════════════════════════════════════════ */
+  .submit-btn {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--white);
+    background: var(--black);
+    cursor: pointer;
+    transition: all var(--transition);
+    overflow: hidden;
+  }
+
+  .submit-btn:hover:not(:disabled) {
+    background: var(--gray-800);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .submit-btn:active:not(:disabled) { transform: translateY(0); }
+
+  .submit-btn:disabled {
+    background: var(--gray-300);
+    color: var(--gray-500);
+    cursor: not-allowed;
+  }
+
+  .submit-btn .spinner {
+    display: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: var(--white);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto;
+  }
+
+  .submit-btn.loading .btn-text { display: none; }
+  .submit-btn.loading .spinner { display: block; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ══════════════════════════════════════════════════════════
+     SUCCESS OVERLAY
+  ══════════════════════════════════════════════════════════ */
+  .success-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    backdrop-filter: blur(8px);
+  }
+
+  .success-overlay.show { display: flex; }
+
+  .success-card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    padding: 44px 32px;
+    text-align: center;
+    max-width: 440px;
+    width: 100%;
+    animation: popIn 0.35s ease;
+    box-shadow: var(--shadow-lg);
+  }
+
+  @keyframes popIn {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .success-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--black);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin: 0 auto 22px;
+    color: var(--white);
+  }
+
+  .success-card h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--black);
+    margin-bottom: 10px;
+  }
+
+  .success-card p {
+    font-size: 13px;
+    color: var(--gray-500);
+    margin-bottom: 6px;
+    line-height: 1.7;
+  }
+
+  .success-card .close-btn {
+    margin-top: 22px;
+    padding: 11px 36px;
+    border: none;
+    border-radius: var(--radius-xs);
+    background: var(--black);
+    color: var(--white);
+    font-family: var(--font);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background var(--transition);
+  }
+
+  .success-card .close-btn:hover { background: var(--gray-800); }
+
+  /* ══════════════════════════════════════════════════════════
+     TOAST
+  ══════════════════════════════════════════════════════════ */
+  .toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2000;
+    background: var(--gray-900);
+    color: var(--white);
+    padding: 13px 20px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: var(--shadow-lg);
+    transform: translateX(120%);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-width: 340px;
+  }
+
+  .toast.success-toast { background: var(--success); }
+  .toast.danger-toast { background: var(--danger); }
+  .toast.show { transform: translateX(0); }
+
+  /* ══════════════════════════════════════════════════════════
+     ADMIN PANEL
+  ══════════════════════════════════════════════════════════ */
+  .admin-toggle {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 500;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--white);
+    border: 1.5px solid var(--gray-300);
+    color: var(--gray-500);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+    box-shadow: var(--shadow);
+  }
+
+  .admin-toggle:hover { color: var(--black); border-color: var(--black); }
+
+  .admin-panel {
+    position: fixed;
+    bottom: 66px;
+    right: 16px;
+    z-index: 500;
+    width: 320px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow-lg);
+    display: none;
+  }
+
+  .admin-panel.show { display: block; }
+
+  .admin-panel h3 {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--gray-700);
+    margin-bottom: 16px;
+  }
+
+  .admin-slot {
+    padding: 12px 14px;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-xs);
+    margin-bottom: 8px;
+  }
+
+  .admin-slot .slot-name {
+    font-size: 12px;
+    color: var(--black);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .admin-slot .slot-counts {
+    font-size: 11px;
+    color: var(--gray-500);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .admin-slot .seat-bar {
+    height: 4px;
+    background: var(--gray-200);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+
+  .admin-slot .seat-bar .fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--gray-500);
+    transition: width 0.3s;
+  }
+
+  .admin-slot .seat-bar .fill.warn { background: var(--gray-700); }
+  .admin-slot .seat-bar .fill.full { background: var(--black); }
+
+  .divider { width: 100%; height: 1px; background: var(--gray-200); margin: 20px 0; }
+
+  .footer {
+    text-align: center;
+    padding: 36px 20px 0;
+    font-size: 11px;
+    color: var(--gray-400);
+    letter-spacing: 0.5px;
+  }
+
+  .footer a {
+    color: var(--gray-600);
+    text-decoration: none;
+    font-weight: 700;
+    transition: color var(--transition);
+  }
+
+  .footer a:hover { color: var(--black); }
+
+  .fade-in { animation: fadeUp 0.45s ease both; }
+
+  @keyframes fadeUp {
+    0% { opacity: 0; transform: translateY(12px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<!-- Success Overlay -->
+<div id="success-overlay" class="success-overlay">
+  <div class="success-card">
+    <div class="success-icon">&#10003;</div>
+    <h2>Registration Submitted</h2>
+    <p>Thank you for registering for the <strong id="success-programme"></strong>.</p>
+    <p>A confirmation summary has been recorded. Please check your email for further details from Polymath Learning Centre.</p>
+    <p style="color:var(--danger);font-size:11px;margin-top:14px;">Reminder: No refunds once registration is confirmed. Ensure all information provided is accurate.</p>
+    <button class="close-btn" onclick="document.getElementById('success-overlay').classList.remove('show');location.reload();">Done</button>
+  </div>
+</div>
+
+<!-- Admin Toggle -->
+<button class="admin-toggle" onclick="toggleAdmin()" title="Admin: View Slot Capacity">&#9881;</button>
+<div id="admin-panel" class="admin-panel">
+  <h3>Slot Capacity Monitor</h3>
+  <div id="admin-slots"></div>
+</div>
+
+<div class="page-wrapper">
+
+  <!-- HEADER -->
+  <header class="header fade-in">
+    <img
+      src="https://www.dropbox.com/scl/fi/h40yjlyg8ldefwfaa3dib/polymath-logo-sticker.png?rlkey=o1ra4taqy79gt9t8u096v82zj&raw=1"
+      alt="Polymath Learning Centre"
+      class="header-logo"
+      crossorigin="anonymous"
+    >
+    <div class="header-badge">2026 June Holiday Programme</div>
+    <h1>Science Workshop Registration</h1>
+    <h2>P5 &amp; P6 Science Revision</h2>
+    <p>2-day intensive programme, 3 hours per day (6 hours total). Conducted by Mr. Chung, founder of Polymath Learning Centre.</p>
+  </header>
+
+  <!-- INFO STRIP -->
+  <div class="info-strip fade-in" style="animation-delay:0.08s">
+    <div class="info-cell">
+      <div class="info-icon">&#128197;</div>
+      <div class="info-label">Duration</div>
+      <div class="info-value">2 Days</div>
+    </div>
+    <div class="info-cell">
+      <div class="info-icon">&#9201;</div>
+      <div class="info-label">Hours</div>
+      <div class="info-value">6 Total</div>
+    </div>
+    <div class="info-cell">
+      <div class="info-icon">&#128187;</div>
+      <div class="info-label">Online</div>
+      <div class="info-value">$240</div>
+    </div>
+    <div class="info-cell">
+      <div class="info-icon">&#127979;</div>
+      <div class="info-label">Physical</div>
+      <div class="info-value">$280</div>
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <form id="regForm" onsubmit="return false;" autocomplete="off">
+
+    <!-- Step 1 -->
+    <div class="card fade-in" style="animation-delay:0.12s">
+      <div class="card-title"><span class="step-num">1</span> Student &amp; Parent Details</div>
+      <div class="field">
+        <label>Student's Full Name <span class="req">*</span></label>
+        <input type="text" id="studentName" placeholder="e.g. Tan Wei Lin" required>
+      </div>
+      <div class="field">
+        <label>Parent's Full Name <span class="req">*</span></label>
+        <input type="text" id="parentName" placeholder="e.g. Tan Ah Kow" required>
+      </div>
+      <div class="field">
+        <label>Email Address <span class="req">*</span></label>
+        <input type="email" id="email" placeholder="e.g. parent@email.com" required>
+        <div class="hint">Confirmation details will be sent to this email.</div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="card fade-in" style="animation-delay:0.16s">
+      <div class="card-title"><span class="step-num">2</span> Programme Selection</div>
+      <div class="field">
+        <label>Select Level <span class="req">*</span></label>
+        <select id="level" required>
+          <option value="" disabled selected>Choose a level</option>
+          <option value="P6">P6 Science</option>
+          <option value="P5">P5 Science</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Class Mode <span class="req">*</span></label>
+        <select id="mode" required>
+          <option value="" disabled selected>Choose class mode</option>
+          <option value="Online">Online — $240</option>
+          <option value="Physical">Physical @ Clementi — $280 (max 12 students)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="card fade-in" style="animation-delay:0.2s">
+      <div class="card-title"><span class="step-num">3</span> Choose Your Slot <span class="req">*</span></div>
+      <p style="font-size:12px;color:var(--gray-500);margin-bottom:18px;">Choose <strong style="color:var(--black)">1 slot only</strong>. Slots update based on your selected level.</p>
+
+      <div id="p6-slots" class="slot-grid slot-hidden">
+        <label class="slot-card" id="slot-p6-s1-card">
+          <input type="radio" name="slot" value="P6-S1" id="slot-p6-s1">
+          <div class="slot-dates">2 &amp; 3 June</div>
+          <div class="slot-days">Tue &amp; Wed</div>
+          <div class="slot-time">10:00 AM – 1:00 PM</div>
+          <div class="slot-seats" id="seats-p6-s1">Loading...</div>
+        </label>
+        <label class="slot-card" id="slot-p6-s2-card">
+          <input type="radio" name="slot" value="P6-S2" id="slot-p6-s2">
+          <div class="slot-dates">6 &amp; 7 June</div>
+          <div class="slot-days">Sat &amp; Sun</div>
+          <div class="slot-time">3:00 PM – 6:00 PM</div>
+          <div class="slot-seats" id="seats-p6-s2">Loading...</div>
+        </label>
+      </div>
+
+      <div id="p5-slots" class="slot-grid slot-hidden">
+        <label class="slot-card" id="slot-p5-s1-card">
+          <input type="radio" name="slot" value="P5-S1" id="slot-p5-s1">
+          <div class="slot-dates">9 &amp; 10 June</div>
+          <div class="slot-days">Mon &amp; Tue</div>
+          <div class="slot-time">10:00 AM – 1:00 PM</div>
+          <div class="slot-seats" id="seats-p5-s1">Loading...</div>
+        </label>
+        <label class="slot-card" id="slot-p5-s2-card">
+          <input type="radio" name="slot" value="P5-S2" id="slot-p5-s2">
+          <div class="slot-dates">13 &amp; 14 June</div>
+          <div class="slot-days">Sat &amp; Sun</div>
+          <div class="slot-time">3:00 PM – 6:00 PM</div>
+          <div class="slot-seats" id="seats-p5-s2">Loading...</div>
+        </label>
+      </div>
+
+      <div id="no-level-msg" style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">
+        Select a level above to view available slots.
+      </div>
+
+      <div class="price-display hidden" id="price-display">
+        <div class="price-label">Amount to pay</div>
+        <div class="price-amount" id="price-amount">$0</div>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="card fade-in hidden" id="payment-card" style="animation-delay:0.24s">
+      <div class="card-title"><span class="step-num">4</span> PayNow Payment</div>
+      <p style="font-size:13px;color:var(--gray-600);margin-bottom:4px;">Scan the QR code below to pay via PayNow. Amount is pre-filled.</p>
+
+      <div class="qr-section">
+        <p>PayNow to <strong style="color:var(--black)">Polymath Learning Centre</strong></p>
+        <div id="qr-canvas-wrapper">
+          <canvas id="qr-canvas"></canvas>
+        </div>
+        <div class="qr-buttons">
+          <button type="button" class="btn-qr copy" onclick="copyQR()">Copy QR</button>
+          <button type="button" class="btn-qr download" onclick="downloadQR()">Download QR</button>
+        </div>
+        <div class="paynow-info">
+          UEN: <strong>T16LL2365E</strong> &nbsp;&middot;&nbsp; Amount: <strong id="qr-amount-label">$0</strong>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field">
+        <label>Upload PayNow Receipt <span class="req">*</span></label>
+        <div class="upload-area" id="upload-area">
+          <input type="file" id="receiptFile" accept="image/*,.pdf" onchange="handleFileSelect(this)">
+          <div class="upload-icon">&#128206;</div>
+          <div class="upload-text">Tap or <strong>click to upload</strong> your PayNow receipt</div>
+          <div class="upload-filename" id="upload-filename"></div>
+        </div>
+        <div class="hint">Accepted: Images (JPG, PNG) or PDF. Max 5 MB.</div>
+      </div>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="card fade-in hidden" id="confirm-card" style="animation-delay:0.28s">
+      <div class="card-title"><span class="step-num">5</span> Confirm &amp; Submit</div>
+
+      <div class="disclaimer-box">
+        <h4>Important — Please Read</h4>
+        <ul>
+          <li>Ensure all information provided is accurate before submitting.</li>
+          <li><strong>No refunds</strong> will be given once registration is confirmed.</li>
+          <li>Slot or mode changes after registration are subject to availability.</li>
+          <li>A confirmation email will be sent to the address provided.</li>
+          <li>Workshop conducted by Mr. Chung, founder of Polymath Learning Centre.</li>
+        </ul>
+      </div>
+
+      <label class="checkbox-field">
+        <input type="checkbox" id="agreeCheck">
+        <span>I confirm that all information above is accurate, and I understand that <strong>no refunds</strong> will be issued once registration is complete.</span>
+      </label>
+    </div>
+
+    <!-- Submit -->
+    <div class="fade-in hidden" id="submit-wrapper" style="animation-delay:0.32s">
+      <button type="button" class="submit-btn" id="submitBtn" onclick="submitForm()" disabled>
+        <span class="btn-text">Submit Registration</span>
+        <div class="spinner"></div>
+      </button>
+    </div>
+
+  </form>
+
+  <div class="footer">
+    <p>Polymath Learning Centre &copy; 2026 &nbsp;&middot;&nbsp; WhatsApp: <a href="https://wa.me/6596450588" target="_blank">9645 0588</a></p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     JAVASCRIPT
+     ═══════════════════════════════════════════════════════ -->
+<script>
+// ─── Firebase Init ───
+const firebaseConfig = {
+  apiKey: "AIzaSyAUSI3Uh28IeqASEp0JhH4QPaVt-O3meBo",
+  authDomain: "mathgen--app.firebaseapp.com",
+  projectId: "mathgen--app",
+  storageBucket: "mathgen--app.firebasestorage.app",
+  messagingSenderId: "165654161198",
+  appId: "1:165654161198:web:16c8bd60eb3a2aa7edbcbf",
+  measurementId: "G-0MWZFG211D"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const storageService = firebase.storage();
+
+// ─── Slot Config ───
+const PHYSICAL_MAX = 12;
+
+const SLOT_CONFIG = {
+  'P6-S1': { label: 'P6 Sci — 2 & 3 Jun (Tue & Wed) 10am–1pm', level: 'P6' },
+  'P6-S2': { label: 'P6 Sci — 6 & 7 Jun (Sat & Sun) 3pm–6pm', level: 'P6' },
+  'P5-S1': { label: 'P5 Sci — 9 & 10 Jun (Mon & Tue) 10am–1pm', level: 'P5' },
+  'P5-S2': { label: 'P5 Sci — 13 & 14 Jun (Sat & Sun) 3pm–6pm', level: 'P5' },
+};
+
+let slotCounts = {};
+Object.keys(SLOT_CONFIG).forEach(k => slotCounts[k] = { physical: 0, online: 0 });
+
+// ─── Firestore Real-Time ───
+function listenToSlotCounts() {
+  db.collection('june2026_registrations').onSnapshot(snapshot => {
+    Object.keys(slotCounts).forEach(k => slotCounts[k] = { physical: 0, online: 0 });
+    snapshot.forEach(doc => {
+      const d = doc.data();
+      if (d.slot && slotCounts[d.slot] !== undefined) {
+        if ((d.mode || '').toLowerCase() === 'physical') slotCounts[d.slot].physical++;
+        else slotCounts[d.slot].online++;
+      }
+    });
+    updateSlotUI();
+    updateAdminPanel();
+  }, err => {
+    console.error('Firestore listener error:', err);
+    updateSlotUI();
+  });
+}
+
+function updateSlotUI() {
+  const selectedMode = document.getElementById('mode').value;
+  Object.keys(SLOT_CONFIG).forEach(slotId => {
+    const count = slotCounts[slotId];
+    const physLeft = PHYSICAL_MAX - count.physical;
+    const elId = 'seats-' + slotId.toLowerCase().replace('-', '-');
+    const cardId = 'slot-' + slotId.toLowerCase().replace('-', '-') + '-card';
+    const seatEl = document.getElementById(elId);
+    const card = document.getElementById(cardId);
+    if (!seatEl || !card) return;
+
+    if (selectedMode === 'Physical') {
+      if (physLeft <= 0) {
+        seatEl.textContent = 'PHYSICAL FULL';
+        seatEl.className = 'slot-seats low';
+        card.classList.add('disabled');
+        const radio = card.querySelector('input[type="radio"]');
+        if (radio && radio.checked) {
+          radio.checked = false;
+          card.classList.remove('selected');
+          onSlotChange();
+        }
+      } else {
+        seatEl.textContent = physLeft + ' / ' + PHYSICAL_MAX + ' physical seats left';
+        seatEl.className = physLeft <= 3 ? 'slot-seats low' : 'slot-seats';
+        card.classList.remove('disabled');
+      }
+    } else {
+      seatEl.textContent = 'Unlimited online seats';
+      seatEl.className = 'slot-seats';
+      card.classList.remove('disabled');
+    }
+  });
+}
+
+function updateAdminPanel() {
+  const container = document.getElementById('admin-slots');
+  let html = '';
+  Object.keys(SLOT_CONFIG).forEach(slotId => {
+    const c = slotCounts[slotId];
+    const pct = Math.min((c.physical / PHYSICAL_MAX) * 100, 100);
+    let barClass = pct >= 100 ? 'full' : pct >= 75 ? 'warn' : '';
+    html += `<div class="admin-slot">
+      <div class="slot-name">${SLOT_CONFIG[slotId].label}</div>
+      <div class="slot-counts"><span>Physical: ${c.physical} / ${PHYSICAL_MAX}</span><span>Online: ${c.online}</span></div>
+      <div class="seat-bar"><div class="fill ${barClass}" style="width:${pct}%"></div></div>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+// ─── PayNow QR (EMV QRCPS / SGQR) ───
+const PAYNOW_UEN = 'T16LL2365E';
+const MERCHANT_NAME = 'POLYMATH LEARNING';
+
+function buildTLV(tag, value) {
+  return tag + value.length.toString().padStart(2, '0') + value;
+}
+
+function buildPayNowString(amount) {
+  const mai26 = buildTLV('00', 'SG.PAYNOW') + buildTLV('01', '2') + buildTLV('02', PAYNOW_UEN) + buildTLV('03', '0');
+  const adt62 = buildTLV('05', 'JUNESCI2026');
+
+  let payload = '';
+  payload += buildTLV('00', '01');
+  payload += buildTLV('01', '12');
+  payload += buildTLV('26', mai26);
+  payload += buildTLV('52', '0000');
+  payload += buildTLV('53', '702');
+  payload += buildTLV('54', amount.toFixed(2));
+  payload += buildTLV('58', 'SG');
+  payload += buildTLV('59', MERCHANT_NAME);
+  payload += buildTLV('60', 'Singapore');
+  payload += buildTLV('62', adt62);
+  payload += '6304';
+
+  const crc = computeCRC16(payload);
+  return payload.slice(0, -4) + buildTLV('63', crc);
+}
+
+function computeCRC16(str) {
+  let crc = 0xFFFF;
+  for (let i = 0; i < str.length; i++) {
+    crc ^= str.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      if (crc & 0x8000) crc = (crc << 1) ^ 0x1021;
+      else crc <<= 1;
+      crc &= 0xFFFF;
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, '0');
+}
+
+// ─── QR Renderer ───
+let qrLibLoaded = false;
+
+function loadQRLib() {
+  return new Promise(resolve => {
+    if (qrLibLoaded) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    s.onload = () => { qrLibLoaded = true; resolve(); };
+    s.onerror = () => { qrLibLoaded = true; resolve(); };
+    document.head.appendChild(s);
+  });
+}
+
+async function generateQR(text) {
+  await loadQRLib();
+  const wrapper = document.getElementById('qr-canvas-wrapper');
+  wrapper.innerHTML = '';
+
+  if (typeof QRCode !== 'undefined') {
+    const div = document.createElement('div');
+    div.id = 'qr-inner';
+    wrapper.appendChild(div);
+    new QRCode(div, { text, width: 200, height: 200, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+  } else {
+    const c = document.createElement('canvas');
+    c.width = 200; c.height = 200;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 200, 200);
+    ctx.fillStyle = '#999'; ctx.font = '12px Century Gothic, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('QR Library Error', 100, 95);
+    ctx.fillText('Please refresh', 100, 115);
+    wrapper.appendChild(c);
+  }
+}
+
+function getQRSource() {
+  const wrapper = document.getElementById('qr-canvas-wrapper');
+  let source = wrapper.querySelector('canvas');
+  if (!source) {
+    const img = wrapper.querySelector('img');
+    if (img) {
+      const tc = document.createElement('canvas');
+      tc.width = img.naturalWidth || 200;
+      tc.height = img.naturalHeight || 200;
+      tc.getContext('2d').drawImage(img, 0, 0);
+      source = tc;
+    }
+  }
+  return source;
+}
+
+function copyQR() {
+  const source = getQRSource();
+  if (!source) { showToast('No QR code to copy', false); return; }
+  source.toBlob(blob => {
+    if (!blob) { showToast('Failed to copy', false); return; }
+    try {
+      navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+        .then(() => showToast('QR code copied to clipboard', true))
+        .catch(() => { downloadQR(); showToast('Copy failed — downloaded instead', true); });
+    } catch (e) {
+      downloadQR();
+      showToast('Copy not supported — downloaded instead', true);
+    }
+  }, 'image/png');
+}
+
+function downloadQR() {
+  const source = getQRSource();
+  if (!source) { showToast('No QR code to download', false); return; }
+  const a = document.createElement('a');
+  a.href = source.toDataURL('image/png');
+  a.download = 'PayNow_Polymath_SciWorkshop.png';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast('QR code downloaded', true);
+}
+
+// ─── Form Logic ───
+const levelSelect = document.getElementById('level');
+const modeSelect = document.getElementById('mode');
+
+levelSelect.addEventListener('change', onLevelOrModeChange);
+modeSelect.addEventListener('change', onLevelOrModeChange);
+
+function onLevelOrModeChange() {
+  const level = levelSelect.value;
+  const p6Slots = document.getElementById('p6-slots');
+  const p5Slots = document.getElementById('p5-slots');
+  const noMsg = document.getElementById('no-level-msg');
+
+  document.querySelectorAll('input[name="slot"]').forEach(r => {
+    r.checked = false;
+    r.closest('.slot-card').classList.remove('selected');
+  });
+
+  if (!level) {
+    p6Slots.classList.add('slot-hidden');
+    p5Slots.classList.add('slot-hidden');
+    noMsg.classList.remove('hidden');
+  } else if (level === 'P6') {
+    p6Slots.classList.remove('slot-hidden');
+    p5Slots.classList.add('slot-hidden');
+    noMsg.classList.add('hidden');
+  } else {
+    p5Slots.classList.remove('slot-hidden');
+    p6Slots.classList.add('slot-hidden');
+    noMsg.classList.add('hidden');
+  }
+
+  updateSlotUI();
+  updatePrice();
+  hidePaymentSection();
+  onSlotChange();
+}
+
+document.querySelectorAll('.slot-card').forEach(card => {
+  card.addEventListener('click', function() {
+    if (this.classList.contains('disabled')) return;
+    this.closest('.slot-grid').querySelectorAll('.slot-card').forEach(c => c.classList.remove('selected'));
+    this.classList.add('selected');
+    this.querySelector('input[type="radio"]').checked = true;
+    onSlotChange();
+  });
+});
+
+function onSlotChange() {
+  const selectedSlot = document.querySelector('input[name="slot"]:checked');
+  if (selectedSlot && modeSelect.value) showPaymentSection();
+  else hidePaymentSection();
+  updateSubmitState();
+}
+
+function getPrice() {
+  const mode = modeSelect.value;
+  return mode === 'Physical' ? 280 : mode === 'Online' ? 240 : 0;
+}
+
+function updatePrice() {
+  const price = getPrice();
+  const el = document.getElementById('price-display');
+  document.getElementById('price-amount').textContent = '$' + price;
+  price > 0 ? el.classList.remove('hidden') : el.classList.add('hidden');
+}
+
+function showPaymentSection() {
+  const price = getPrice();
+  if (price <= 0) return;
+  document.getElementById('payment-card').classList.remove('hidden');
+  document.getElementById('confirm-card').classList.remove('hidden');
+  document.getElementById('submit-wrapper').classList.remove('hidden');
+  generateQR(buildPayNowString(price));
+  document.getElementById('qr-amount-label').textContent = '$' + price;
+}
+
+function hidePaymentSection() {
+  document.getElementById('payment-card').classList.add('hidden');
+  document.getElementById('confirm-card').classList.add('hidden');
+  document.getElementById('submit-wrapper').classList.add('hidden');
+}
+
+function handleFileSelect(input) {
+  const file = input.files[0];
+  const area = document.getElementById('upload-area');
+  const nameEl = document.getElementById('upload-filename');
+  if (file) {
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('File too large. Maximum 5 MB.', false);
+      input.value = '';
+      area.classList.remove('has-file');
+      nameEl.textContent = '';
+      return;
+    }
+    area.classList.add('has-file');
+    nameEl.textContent = '\u2713 ' + file.name;
+  } else {
+    area.classList.remove('has-file');
+    nameEl.textContent = '';
+  }
+  updateSubmitState();
+}
+
+document.getElementById('agreeCheck').addEventListener('change', updateSubmitState);
+
+function updateSubmitState() {
+  const btn = document.getElementById('submitBtn');
+  const ok = document.getElementById('studentName').value.trim()
+    && document.getElementById('parentName').value.trim()
+    && document.getElementById('email').value.trim()
+    && levelSelect.value
+    && modeSelect.value
+    && document.querySelector('input[name="slot"]:checked')
+    && document.getElementById('receiptFile').files[0]
+    && document.getElementById('agreeCheck').checked;
+  btn.disabled = !ok;
+}
+
+['studentName', 'parentName', 'email'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateSubmitState);
+});
+
+// ─── Submit ───
+async function submitForm() {
+  const btn = document.getElementById('submitBtn');
+  if (btn.disabled) return;
+
+  const studentName = document.getElementById('studentName').value.trim();
+  const parentName = document.getElementById('parentName').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const level = levelSelect.value;
+  const mode = modeSelect.value;
+  const slotVal = document.querySelector('input[name="slot"]:checked').value;
+  const receiptFile = document.getElementById('receiptFile').files[0];
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showToast('Please enter a valid email address.', false);
+    return;
+  }
+
+  if (mode === 'Physical' && (slotCounts[slotVal]?.physical || 0) >= PHYSICAL_MAX) {
+    showToast('Physical seats for this slot are full. Please choose another option.', false);
+    return;
+  }
+
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  try {
+    const timestamp = Date.now();
+    const safeName = receiptFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const ref = storageService.ref(`june2026_receipts/${slotVal}/${timestamp}_${safeName}`);
+    await ref.put(receiptFile);
+    const receiptURL = await ref.getDownloadURL();
+
+    await db.collection('june2026_registrations').add({
+      studentName, parentName, email, level, mode,
+      slot: slotVal,
+      slotLabel: SLOT_CONFIG[slotVal].label,
+      price: getPrice(),
+      receiptURL,
+      receiptFilename: receiptFile.name,
+      submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      status: 'pending'
+    });
+
+    document.getElementById('success-programme').textContent =
+      level + ' Science Workshop — ' + SLOT_CONFIG[slotVal].label;
+    document.getElementById('success-overlay').classList.add('show');
+  } catch (err) {
+    console.error('Submission error:', err);
+    showToast('Submission failed: ' + (err.message || 'Please try again.'), false);
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+}
+
+// ─── Toast ───
+function showToast(msg, isSuccess) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = isSuccess ? 'toast success-toast show' : 'toast danger-toast show';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ─── Admin ───
+function toggleAdmin() {
+  document.getElementById('admin-panel').classList.toggle('show');
+}
+
+// ─── Init ───
+loadQRLib();
+listenToSlotCounts();
+</script>
+</body>
+</html>

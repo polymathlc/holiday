@@ -7,6 +7,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <style>
   /* ══════════════════════════════════════════════════════════
      RESET & VARIABLES
@@ -775,8 +776,9 @@
     bottom: 66px;
     right: 16px;
     z-index: 500;
-    width: 320px;
-    max-height: 400px;
+    width: 460px;
+    max-width: calc(100vw - 32px);
+    max-height: 80vh;
     overflow-y: auto;
     background: var(--white);
     border: 1px solid var(--gray-200);
@@ -785,6 +787,71 @@
     box-shadow: var(--shadow-lg);
     display: none;
   }
+
+  .admin-group {
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-xs);
+    margin-bottom: 8px;
+    background: var(--white);
+  }
+  .admin-group > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--black);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .admin-group > summary::-webkit-details-marker { display: none; }
+  .admin-group[open] > summary { border-bottom: 1px solid var(--gray-200); background: var(--gray-50); }
+  .admin-group .count-badge {
+    font-size: 10px;
+    font-weight: 700;
+    background: var(--gray-200);
+    color: var(--gray-700);
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .admin-student {
+    padding: 10px 12px;
+    border-top: 1px solid var(--gray-100);
+  }
+  .admin-student:first-child { border-top: none; }
+  .admin-student-name { font-size: 12px; font-weight: 700; color: var(--black); }
+  .admin-student-meta {
+    font-size: 10px;
+    color: var(--gray-500);
+    margin: 2px 0 8px;
+    word-break: break-word;
+  }
+  .admin-student-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 6px;
+  }
+  .admin-student-controls select,
+  .admin-student-controls button {
+    font-size: 11px;
+    padding: 6px 8px;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-xs);
+    background: var(--white);
+    color: var(--black);
+  }
+  .admin-student-controls button {
+    background: var(--black);
+    color: var(--white);
+    border-color: var(--black);
+    cursor: pointer;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .admin-student-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .admin-student-controls button.dirty { background: var(--danger); border-color: var(--danger); }
 
   .admin-panel.show { display: block; }
 
@@ -1047,38 +1114,38 @@
 </div>
 
 <!-- Admin Toggle -->
-<button class="admin-toggle" onclick="toggleAdmin()" title="Admin: View Slot Capacity">&#9881;</button>
+<button class="admin-toggle" onclick="handleAdminToggle()" title="Admin: View Slot Capacity">&#9881;</button>
 <div id="admin-panel" class="admin-panel">
-  <h3>Slot Capacity Monitor</h3>
-  <div id="admin-slots"></div>
-  <button id="admin-reset-btn" onclick="resetAllToP6S1()"
-          style="margin-top:12px;width:100%;padding:10px 12px;font-size:11px;font-weight:700;
-                 text-transform:uppercase;letter-spacing:1.5px;background:var(--black);
-                 color:var(--white);border:none;border-radius:var(--radius-xs);cursor:pointer;">
-    Reset All Registrations → 2 &amp; 3 June (P6-S1)
-  </button>
-  <div id="admin-reset-status" style="font-size:11px;color:var(--gray-500);margin-top:8px;"></div>
-
-  <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--gray-200);">
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
-                color:var(--gray-700);margin-bottom:8px;">Set Student Mode</div>
-    <input id="admin-mode-name" type="text" placeholder="Student name (e.g. Cassidy)"
-           style="width:100%;padding:8px 10px;font-size:12px;border:1px solid var(--gray-200);
-                  border-radius:var(--radius-xs);margin-bottom:6px;">
-    <select id="admin-mode-value"
-            style="width:100%;padding:8px 10px;font-size:12px;border:1px solid var(--gray-200);
-                   border-radius:var(--radius-xs);margin-bottom:6px;">
-      <option value="Physical">Physical</option>
-      <option value="Online">Online</option>
-    </select>
-    <button onclick="setStudentMode()"
-            style="width:100%;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;
-                   letter-spacing:1.5px;background:var(--black);color:var(--white);border:none;
-                   border-radius:var(--radius-xs);cursor:pointer;">
-      Update Mode
-    </button>
-    <div id="admin-mode-status" style="font-size:11px;color:var(--gray-500);margin-top:8px;"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <h3 style="margin:0;">Admin Console</h3>
+    <button onclick="adminSignOut()" id="admin-signout"
+            style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;
+                   background:transparent;color:var(--gray-500);border:1px solid var(--gray-200);
+                   border-radius:var(--radius-xs);padding:4px 8px;cursor:pointer;">Sign out</button>
   </div>
+  <div id="admin-user" style="font-size:11px;color:var(--gray-500);margin-bottom:14px;"></div>
+
+  <details class="admin-group">
+    <summary>Slot Capacity <span class="count-badge" id="admin-total-count">0</span></summary>
+    <div id="admin-slots" style="padding:10px 12px;"></div>
+  </details>
+
+  <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
+              color:var(--gray-700);margin:18px 0 8px;">Registrations</div>
+  <div id="admin-registrations"></div>
+
+  <details class="admin-group" style="margin-top:18px;">
+    <summary>Danger Zone <span class="count-badge">!</span></summary>
+    <div style="padding:10px 12px;">
+      <button id="admin-reset-btn" onclick="resetAllToP6S1()"
+              style="width:100%;padding:10px 12px;font-size:11px;font-weight:700;
+                     text-transform:uppercase;letter-spacing:1.5px;background:var(--danger);
+                     color:var(--white);border:none;border-radius:var(--radius-xs);cursor:pointer;">
+        Reset All Registrations → 2 &amp; 3 June (P6-S1)
+      </button>
+      <div id="admin-reset-status" style="font-size:11px;color:var(--gray-500);margin-top:8px;"></div>
+    </div>
+  </details>
 </div>
 
 <div class="page-wrapper">
@@ -1328,6 +1395,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const storageService = firebase.storage();
+const auth = firebase.auth();
+const ADMIN_EMAIL = 'chungzhikai@gmail.com';
 
 // ─── Notification Recipients ───
 // These addresses receive a notification for every enrollment plus a full
@@ -1390,11 +1459,15 @@ const SCOPE_CONTENT = {
 };
 
 // ─── Firestore Real-Time ───
+let allRegistrations = [];
+
 function listenToSlotCounts() {
   db.collection('june2026_registrations').onSnapshot(snapshot => {
     Object.keys(slotCounts).forEach(k => slotCounts[k] = { physical: 0, online: 0 });
+    allRegistrations = [];
     snapshot.forEach(doc => {
       const d = doc.data();
+      allRegistrations.push(Object.assign({ _id: doc.id }, d));
       if (d.slot && slotCounts[d.slot] !== undefined) {
         if ((d.mode || '').toLowerCase() === 'physical') slotCounts[d.slot].physical++;
         else slotCounts[d.slot].online++;
@@ -1402,6 +1475,7 @@ function listenToSlotCounts() {
     });
     updateSlotUI();
     updateAdminPanel();
+    renderAdminRegistrations();
   }, err => {
     console.error('Firestore listener error:', err);
     updateSlotUI();
@@ -2224,15 +2298,167 @@ function showToast(msg, isSuccess) {
   t._timer = setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-// ─── Admin ───
-function toggleAdmin() {
-  document.getElementById('admin-panel').classList.toggle('show');
+// ─── Admin Auth ───
+// The gear icon stays visible to everyone, but the admin panel only opens
+// for ADMIN_EMAIL after Google sign-in. Any other account is signed out
+// immediately and never sees the panel.
+async function handleAdminToggle() {
+  const user = auth.currentUser;
+  if (user && user.email === ADMIN_EMAIL) {
+    document.getElementById('admin-panel').classList.toggle('show');
+    return;
+  }
+  try {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    const result = await auth.signInWithPopup(provider);
+    if (result.user && result.user.email === ADMIN_EMAIL) {
+      document.getElementById('admin-panel').classList.add('show');
+    } else {
+      const wrongEmail = result.user ? result.user.email : '(unknown)';
+      await auth.signOut();
+      alert('Access denied. ' + wrongEmail + ' is not an admin account.');
+    }
+  } catch (err) {
+    if (err && err.code === 'auth/popup-closed-by-user') return;
+    console.error('Admin sign-in failed:', err);
+    alert('Sign-in failed: ' + (err.message || err));
+  }
+}
+
+async function adminSignOut() {
+  await auth.signOut();
+  document.getElementById('admin-panel').classList.remove('show');
+}
+
+// Hide the admin panel and restore the signed-in label whenever auth state
+// changes (page reload, token expiry, other tab signing out, etc.).
+auth.onAuthStateChanged(user => {
+  const userEl = document.getElementById('admin-user');
+  if (user && user.email === ADMIN_EMAIL) {
+    if (userEl) userEl.textContent = 'Signed in as ' + user.email;
+    renderAdminRegistrations();
+  } else {
+    if (userEl) userEl.textContent = '';
+    document.getElementById('admin-panel').classList.remove('show');
+    const reg = document.getElementById('admin-registrations');
+    if (reg) reg.innerHTML = '';
+  }
+});
+
+// Renders every registration grouped by its current slot, with per-row
+// dropdowns to reassign slot/mode. Only emits markup when the admin is
+// signed in so non-admins never see registrant PII.
+function renderAdminRegistrations() {
+  const container = document.getElementById('admin-registrations');
+  if (!container) return;
+  const u = auth.currentUser;
+  if (!u || u.email !== ADMIN_EMAIL) { container.innerHTML = ''; return; }
+
+  const totalEl = document.getElementById('admin-total-count');
+  if (totalEl) totalEl.textContent = String(allRegistrations.length);
+
+  const groups = {};
+  Object.keys(SLOT_CONFIG).forEach(k => groups[k] = []);
+  const orphans = [];
+  allRegistrations.forEach(r => {
+    if (r.slot && groups[r.slot]) groups[r.slot].push(r);
+    else orphans.push(r);
+  });
+
+  const slotOptions = (current) => Object.keys(SLOT_CONFIG).map(k =>
+    '<option value="' + k + '"' + (k === current ? ' selected' : '') + '>'
+    + escapeHtml(SLOT_CONFIG[k].label) + '</option>'
+  ).join('');
+
+  const modeOptions = (current) => {
+    const cur = (current || '').toLowerCase();
+    return ['Physical', 'Online'].map(m =>
+      '<option value="' + m + '"' + (m.toLowerCase() === cur ? ' selected' : '') + '>' + m + '</option>'
+    ).join('');
+  };
+
+  const renderRow = (r) => {
+    const id = r._id;
+    const meta = [r.parentName, r.email, r.whatsapp].filter(Boolean).map(escapeHtml).join(' · ');
+    return ''
+      + '<div class="admin-student" data-id="' + escapeHtml(id) + '">'
+      +   '<div class="admin-student-name">' + escapeHtml(r.studentName || '(no name)')
+      +     ' <span style="font-weight:400;color:var(--gray-500);font-size:10px;">' + escapeHtml(r.level || '') + '</span></div>'
+      +   '<div class="admin-student-meta">' + meta + '</div>'
+      +   '<div class="admin-student-controls">'
+      +     '<select data-field="slot" onchange="markStudentDirty(\'' + id + '\')">' + slotOptions(r.slot) + '</select>'
+      +     '<select data-field="mode" onchange="markStudentDirty(\'' + id + '\')">' + modeOptions(r.mode) + '</select>'
+      +     '<button onclick="saveStudentEdit(\'' + id + '\')">Save</button>'
+      +   '</div>'
+      + '</div>';
+  };
+
+  let html = '';
+  Object.keys(SLOT_CONFIG).forEach(slotId => {
+    const list = groups[slotId];
+    html += '<details class="admin-group"' + (list.length ? ' open' : '') + '>'
+      + '<summary>' + escapeHtml(SLOT_CONFIG[slotId].label)
+      +   ' <span class="count-badge">' + list.length + '</span></summary>'
+      + '<div>' + (list.length ? list.map(renderRow).join('') : '<div style="padding:12px;font-size:11px;color:var(--gray-500);">No registrations.</div>') + '</div>'
+      + '</details>';
+  });
+  if (orphans.length) {
+    html += '<details class="admin-group" open>'
+      + '<summary>Unassigned / Unknown Slot <span class="count-badge">' + orphans.length + '</span></summary>'
+      + '<div>' + orphans.map(renderRow).join('') + '</div>'
+      + '</details>';
+  }
+  container.innerHTML = html;
+}
+
+function markStudentDirty(id) {
+  const row = document.querySelector('.admin-student[data-id="' + id + '"]');
+  if (!row) return;
+  const btn = row.querySelector('button');
+  if (btn) { btn.classList.add('dirty'); btn.textContent = 'Save *'; }
+}
+
+async function saveStudentEdit(id) {
+  if (!requireAdmin()) return;
+  const row = document.querySelector('.admin-student[data-id="' + id + '"]');
+  if (!row) return;
+  const slot = row.querySelector('select[data-field="slot"]').value;
+  const mode = row.querySelector('select[data-field="mode"]').value;
+  const btn = row.querySelector('button');
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'Saving…';
+  try {
+    await db.collection('june2026_registrations').doc(id).update({ slot, mode });
+    btn.classList.remove('dirty');
+    btn.textContent = 'Saved';
+    setTimeout(() => { if (btn.textContent === 'Saved') btn.textContent = 'Save'; }, 1500);
+  } catch (err) {
+    console.error('saveStudentEdit failed:', err);
+    btn.textContent = original;
+    alert('Save failed: ' + (err.message || err));
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// Guard every privileged admin action: even if someone calls the function
+// from devtools, the Firestore writes only fire when the current user is
+// the configured admin email.
+function requireAdmin() {
+  const u = auth.currentUser;
+  if (!u || u.email !== ADMIN_EMAIL) {
+    alert('Admin sign-in required.');
+    return false;
+  }
+  return true;
 }
 
 // One-click migration: reassigns every existing registration's slot to P6-S1
 // (2 & 3 June). Runs entirely from the browser using the same Firestore client
 // the rest of the page uses, so no manual Firebase console editing is needed.
 async function resetAllToP6S1() {
+  if (!requireAdmin()) return;
   const TARGET = 'P6-S1';
   const btn = document.getElementById('admin-reset-btn');
   const statusEl = document.getElementById('admin-reset-status');
@@ -2268,45 +2494,6 @@ async function resetAllToP6S1() {
   } finally {
     btn.disabled = false;
     btn.style.opacity = '1';
-  }
-}
-
-// Looks up registrations whose studentName contains the given query
-// (case-insensitive) and rewrites their `mode` field. Avoids touching
-// the Firebase console for one-off corrections.
-async function setStudentMode() {
-  const nameQ = document.getElementById('admin-mode-name').value.trim().toLowerCase();
-  const newMode = document.getElementById('admin-mode-value').value;
-  const statusEl = document.getElementById('admin-mode-status');
-  if (!nameQ) { statusEl.textContent = 'Enter a student name first.'; return; }
-
-  statusEl.textContent = 'Searching…';
-  try {
-    const snap = await db.collection('june2026_registrations').get();
-    const matches = snap.docs.filter(d => {
-      const n = (d.data().studentName || '').toLowerCase();
-      return n.includes(nameQ);
-    });
-
-    if (matches.length === 0) {
-      statusEl.textContent = 'No registration found matching "' + nameQ + '".';
-      return;
-    }
-    if (matches.length > 1) {
-      const names = matches.map(d => d.data().studentName).join(', ');
-      if (!confirm(matches.length + ' matches found (' + names + '). Update all to ' + newMode + '?')) {
-        statusEl.textContent = 'Cancelled.';
-        return;
-      }
-    }
-
-    const batch = db.batch();
-    matches.forEach(d => batch.update(d.ref, { mode: newMode }));
-    await batch.commit();
-    statusEl.textContent = 'Updated ' + matches.length + ' record(s) → ' + newMode + '.';
-  } catch (err) {
-    console.error('setStudentMode failed:', err);
-    statusEl.textContent = 'Error: ' + (err.message || err);
   }
 }
 

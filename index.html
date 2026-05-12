@@ -749,31 +749,40 @@
   /* ══════════════════════════════════════════════════════════
      ADMIN PANEL
   ══════════════════════════════════════════════════════════ */
-  .admin-toggle {
+  .admin-badge {
     position: fixed;
-    bottom: 16px;
+    top: 16px;
     right: 16px;
     z-index: 500;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--white);
-    border: 1.5px solid var(--gray-300);
-    color: var(--gray-500);
-    font-size: 16px;
-    cursor: pointer;
-    display: flex;
+    display: none;
     align-items: center;
-    justify-content: center;
-    transition: all var(--transition);
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--black);
+    color: var(--white);
+    border-radius: var(--radius-xs);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
     box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: opacity var(--transition);
   }
-
-  .admin-toggle:hover { color: var(--black); border-color: var(--black); }
+  .admin-badge.show { display: inline-flex; }
+  .admin-badge:hover { opacity: 0.85; }
+  .admin-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #4ade80;
+    box-shadow: 0 0 6px #4ade80;
+  }
 
   .admin-panel {
     position: fixed;
-    bottom: 66px;
+    top: 64px;
     right: 16px;
     z-index: 500;
     width: 460px;
@@ -1113,8 +1122,10 @@
   </div>
 </div>
 
-<!-- Admin Toggle -->
-<button class="admin-toggle" onclick="handleAdminToggle()" title="Admin: View Slot Capacity">&#9881;</button>
+<!-- Admin Badge: only visible when signed in as ADMIN_EMAIL. Hidden trigger
+     for first login: navigate to "#admin" in the URL. -->
+<button id="admin-badge" class="admin-badge" onclick="handleAdminToggle()"
+        title="Admin Console — click to toggle">Logged in as admin</button>
 <div id="admin-panel" class="admin-panel">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
     <h3 style="margin:0;">Admin Console</h3>
@@ -2299,15 +2310,12 @@ function showToast(msg, isSuccess) {
 }
 
 // ─── Admin Auth ───
-// The gear icon stays visible to everyone, but the admin panel only opens
-// for ADMIN_EMAIL after Google sign-in. Any other account is signed out
+// No visible UI for normal visitors. The admin signs in by navigating to
+// "<site>/#admin" — that hash triggers the Google sign-in popup once. After
+// a successful sign-in as ADMIN_EMAIL, a badge appears top-right and the
+// student management panel opens. Any other Google account is signed out
 // immediately and never sees the panel.
-async function handleAdminToggle() {
-  const user = auth.currentUser;
-  if (user && user.email === ADMIN_EMAIL) {
-    document.getElementById('admin-panel').classList.toggle('show');
-    return;
-  }
+async function adminSignInFlow() {
   try {
     const provider = new firebase.auth.GoogleAuthProvider();
     const result = await auth.signInWithPopup(provider);
@@ -2325,25 +2333,53 @@ async function handleAdminToggle() {
   }
 }
 
+// Toggles the admin panel when the badge is clicked. The badge is only
+// rendered for the authenticated admin, so this never runs for visitors.
+function handleAdminToggle() {
+  if (!auth.currentUser || auth.currentUser.email !== ADMIN_EMAIL) return;
+  document.getElementById('admin-panel').classList.toggle('show');
+}
+
 async function adminSignOut() {
   await auth.signOut();
   document.getElementById('admin-panel').classList.remove('show');
+  if (location.hash === '#admin') {
+    history.replaceState(null, '', location.pathname + location.search);
+  }
 }
 
-// Hide the admin panel and restore the signed-in label whenever auth state
-// changes (page reload, token expiry, other tab signing out, etc.).
+// Drive badge visibility, panel state, and the registrations list from auth
+// state. Non-admins never see admin UI and never have PII rendered into the
+// DOM, even briefly.
 auth.onAuthStateChanged(user => {
   const userEl = document.getElementById('admin-user');
+  const badge = document.getElementById('admin-badge');
   if (user && user.email === ADMIN_EMAIL) {
     if (userEl) userEl.textContent = 'Signed in as ' + user.email;
+    if (badge) badge.classList.add('show');
     renderAdminRegistrations();
   } else {
     if (userEl) userEl.textContent = '';
+    if (badge) badge.classList.remove('show');
     document.getElementById('admin-panel').classList.remove('show');
     const reg = document.getElementById('admin-registrations');
     if (reg) reg.innerHTML = '';
   }
 });
+
+// Hidden login trigger: visiting "<site>/#admin" launches the sign-in popup
+// once on load. The hash is stripped after handling so it doesn't loop.
+function maybeStartAdminLogin() {
+  if (location.hash !== '#admin') return;
+  history.replaceState(null, '', location.pathname + location.search);
+  if (auth.currentUser && auth.currentUser.email === ADMIN_EMAIL) {
+    document.getElementById('admin-panel').classList.add('show');
+    return;
+  }
+  adminSignInFlow();
+}
+window.addEventListener('hashchange', maybeStartAdminLogin);
+maybeStartAdminLogin();
 
 // Renders every registration grouped by its current slot, with per-row
 // dropdowns to reassign slot/mode. Only emits markup when the admin is

@@ -1051,6 +1051,13 @@
 <div id="admin-panel" class="admin-panel">
   <h3>Slot Capacity Monitor</h3>
   <div id="admin-slots"></div>
+  <button id="admin-reset-btn" onclick="resetAllToP6S1()"
+          style="margin-top:12px;width:100%;padding:10px 12px;font-size:11px;font-weight:700;
+                 text-transform:uppercase;letter-spacing:1.5px;background:var(--black);
+                 color:var(--white);border:none;border-radius:var(--radius-xs);cursor:pointer;">
+    Reset All Registrations → 2 &amp; 3 June (P6-S1)
+  </button>
+  <div id="admin-reset-status" style="font-size:11px;color:var(--gray-500);margin-top:8px;"></div>
 </div>
 
 <div class="page-wrapper">
@@ -1147,10 +1154,10 @@
       <div class="card-title"><span class="step-num">3</span> Class Mode</div>
       <div class="field">
         <label>How would you like to attend? <span class="req">*</span></label>
-        <select id="mode" required title="Online classes run on Zoom; physical classes run at our Clementi centre (max 12 students)">
+        <select id="mode" required title="Online classes run on Zoom; physical classes run at our Clementi centre (max 14 students)">
           <option value="" disabled selected>Choose class mode</option>
           <option value="Online">Online — $240</option>
-          <option value="Physical">Physical @ Clementi — $280 (max 12 students)</option>
+          <option value="Physical">Physical @ Clementi — $280 (max 14 students)</option>
         </select>
         <div class="hint">Online: attend on Zoom from anywhere. Physical: in-person at Clementi (limited seats).</div>
       </div>
@@ -1313,7 +1320,7 @@ const NOTIFICATION_EMAILS = [
 ];
 
 // ─── Slot Config ───
-const PHYSICAL_MAX = 12;
+const PHYSICAL_MAX = 14;
 
 const SLOT_CONFIG = {
   'P6-S1': { label: 'P6 Sci — 2 & 3 Jun (Tue & Wed) 10am–1pm', level: 'P6' },
@@ -2199,6 +2206,48 @@ function showToast(msg, isSuccess) {
 // ─── Admin ───
 function toggleAdmin() {
   document.getElementById('admin-panel').classList.toggle('show');
+}
+
+// One-click migration: reassigns every existing registration's slot to P6-S1
+// (2 & 3 June). Runs entirely from the browser using the same Firestore client
+// the rest of the page uses, so no manual Firebase console editing is needed.
+async function resetAllToP6S1() {
+  const TARGET = 'P6-S1';
+  const btn = document.getElementById('admin-reset-btn');
+  const statusEl = document.getElementById('admin-reset-status');
+  if (!confirm('This will set EVERY registration\'s slot to P6-S1 (2 & 3 June). Continue?')) return;
+
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  statusEl.textContent = 'Fetching registrations…';
+
+  try {
+    const snap = await db.collection('june2026_registrations').get();
+    const docs = snap.docs.filter(d => (d.data().slot || '') !== TARGET);
+    if (docs.length === 0) {
+      statusEl.textContent = 'Nothing to update — all registrations already on ' + TARGET + '.';
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      return;
+    }
+
+    // Firestore batches cap at 500 writes; chunk to be safe.
+    let done = 0;
+    for (let i = 0; i < docs.length; i += 400) {
+      const batch = db.batch();
+      docs.slice(i, i + 400).forEach(d => batch.update(d.ref, { slot: TARGET }));
+      await batch.commit();
+      done += Math.min(400, docs.length - i);
+      statusEl.textContent = 'Updated ' + done + ' / ' + docs.length + '…';
+    }
+    statusEl.textContent = 'Done. ' + done + ' registration(s) reassigned to ' + TARGET + '.';
+  } catch (err) {
+    console.error('Bulk reset failed:', err);
+    statusEl.textContent = 'Error: ' + (err.message || err);
+  } finally {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  }
 }
 
 // ─── Init ───

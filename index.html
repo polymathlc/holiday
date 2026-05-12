@@ -1058,6 +1058,27 @@
     Reset All Registrations → 2 &amp; 3 June (P6-S1)
   </button>
   <div id="admin-reset-status" style="font-size:11px;color:var(--gray-500);margin-top:8px;"></div>
+
+  <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--gray-200);">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
+                color:var(--gray-700);margin-bottom:8px;">Set Student Mode</div>
+    <input id="admin-mode-name" type="text" placeholder="Student name (e.g. Cassidy)"
+           style="width:100%;padding:8px 10px;font-size:12px;border:1px solid var(--gray-200);
+                  border-radius:var(--radius-xs);margin-bottom:6px;">
+    <select id="admin-mode-value"
+            style="width:100%;padding:8px 10px;font-size:12px;border:1px solid var(--gray-200);
+                   border-radius:var(--radius-xs);margin-bottom:6px;">
+      <option value="Physical">Physical</option>
+      <option value="Online">Online</option>
+    </select>
+    <button onclick="setStudentMode()"
+            style="width:100%;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;
+                   letter-spacing:1.5px;background:var(--black);color:var(--white);border:none;
+                   border-radius:var(--radius-xs);cursor:pointer;">
+      Update Mode
+    </button>
+    <div id="admin-mode-status" style="font-size:11px;color:var(--gray-500);margin-top:8px;"></div>
+  </div>
 </div>
 
 <div class="page-wrapper">
@@ -2247,6 +2268,45 @@ async function resetAllToP6S1() {
   } finally {
     btn.disabled = false;
     btn.style.opacity = '1';
+  }
+}
+
+// Looks up registrations whose studentName contains the given query
+// (case-insensitive) and rewrites their `mode` field. Avoids touching
+// the Firebase console for one-off corrections.
+async function setStudentMode() {
+  const nameQ = document.getElementById('admin-mode-name').value.trim().toLowerCase();
+  const newMode = document.getElementById('admin-mode-value').value;
+  const statusEl = document.getElementById('admin-mode-status');
+  if (!nameQ) { statusEl.textContent = 'Enter a student name first.'; return; }
+
+  statusEl.textContent = 'Searching…';
+  try {
+    const snap = await db.collection('june2026_registrations').get();
+    const matches = snap.docs.filter(d => {
+      const n = (d.data().studentName || '').toLowerCase();
+      return n.includes(nameQ);
+    });
+
+    if (matches.length === 0) {
+      statusEl.textContent = 'No registration found matching "' + nameQ + '".';
+      return;
+    }
+    if (matches.length > 1) {
+      const names = matches.map(d => d.data().studentName).join(', ');
+      if (!confirm(matches.length + ' matches found (' + names + '). Update all to ' + newMode + '?')) {
+        statusEl.textContent = 'Cancelled.';
+        return;
+      }
+    }
+
+    const batch = db.batch();
+    matches.forEach(d => batch.update(d.ref, { mode: newMode }));
+    await batch.commit();
+    statusEl.textContent = 'Updated ' + matches.length + ' record(s) → ' + newMode + '.';
+  } catch (err) {
+    console.error('setStudentMode failed:', err);
+    statusEl.textContent = 'Error: ' + (err.message || err);
   }
 }
 

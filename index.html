@@ -7,6 +7,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <style>
   /* ══════════════════════════════════════════════════════════
      RESET & VARIABLES
@@ -1047,9 +1048,16 @@
 </div>
 
 <!-- Admin Toggle -->
-<button class="admin-toggle" onclick="toggleAdmin()" title="Admin: View Slot Capacity">&#9881;</button>
+<button class="admin-toggle" onclick="handleAdminToggle()" title="Admin: View Slot Capacity">&#9881;</button>
 <div id="admin-panel" class="admin-panel">
-  <h3>Slot Capacity Monitor</h3>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <h3 style="margin:0;">Slot Capacity Monitor</h3>
+    <button onclick="adminSignOut()" id="admin-signout"
+            style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;
+                   background:transparent;color:var(--gray-500);border:1px solid var(--gray-200);
+                   border-radius:var(--radius-xs);padding:4px 8px;cursor:pointer;">Sign out</button>
+  </div>
+  <div id="admin-user" style="font-size:11px;color:var(--gray-500);margin-bottom:10px;"></div>
   <div id="admin-slots"></div>
   <button id="admin-reset-btn" onclick="resetAllToP6S1()"
           style="margin-top:12px;width:100%;padding:10px 12px;font-size:11px;font-weight:700;
@@ -1328,6 +1336,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const storageService = firebase.storage();
+const auth = firebase.auth();
+const ADMIN_EMAIL = 'chungzhikai@gmail.com';
 
 // ─── Notification Recipients ───
 // These addresses receive a notification for every enrollment plus a full
@@ -2224,15 +2234,67 @@ function showToast(msg, isSuccess) {
   t._timer = setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-// ─── Admin ───
-function toggleAdmin() {
-  document.getElementById('admin-panel').classList.toggle('show');
+// ─── Admin Auth ───
+// The gear icon stays visible to everyone, but the admin panel only opens
+// for ADMIN_EMAIL after Google sign-in. Any other account is signed out
+// immediately and never sees the panel.
+async function handleAdminToggle() {
+  const user = auth.currentUser;
+  if (user && user.email === ADMIN_EMAIL) {
+    document.getElementById('admin-panel').classList.toggle('show');
+    return;
+  }
+  try {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    const result = await auth.signInWithPopup(provider);
+    if (result.user && result.user.email === ADMIN_EMAIL) {
+      document.getElementById('admin-panel').classList.add('show');
+    } else {
+      const wrongEmail = result.user ? result.user.email : '(unknown)';
+      await auth.signOut();
+      alert('Access denied. ' + wrongEmail + ' is not an admin account.');
+    }
+  } catch (err) {
+    if (err && err.code === 'auth/popup-closed-by-user') return;
+    console.error('Admin sign-in failed:', err);
+    alert('Sign-in failed: ' + (err.message || err));
+  }
+}
+
+async function adminSignOut() {
+  await auth.signOut();
+  document.getElementById('admin-panel').classList.remove('show');
+}
+
+// Hide the admin panel and restore the signed-in label whenever auth state
+// changes (page reload, token expiry, other tab signing out, etc.).
+auth.onAuthStateChanged(user => {
+  const userEl = document.getElementById('admin-user');
+  if (user && user.email === ADMIN_EMAIL) {
+    if (userEl) userEl.textContent = 'Signed in as ' + user.email;
+  } else {
+    if (userEl) userEl.textContent = '';
+    document.getElementById('admin-panel').classList.remove('show');
+  }
+});
+
+// Guard every privileged admin action: even if someone calls the function
+// from devtools, the Firestore writes only fire when the current user is
+// the configured admin email.
+function requireAdmin() {
+  const u = auth.currentUser;
+  if (!u || u.email !== ADMIN_EMAIL) {
+    alert('Admin sign-in required.');
+    return false;
+  }
+  return true;
 }
 
 // One-click migration: reassigns every existing registration's slot to P6-S1
 // (2 & 3 June). Runs entirely from the browser using the same Firestore client
 // the rest of the page uses, so no manual Firebase console editing is needed.
 async function resetAllToP6S1() {
+  if (!requireAdmin()) return;
   const TARGET = 'P6-S1';
   const btn = document.getElementById('admin-reset-btn');
   const statusEl = document.getElementById('admin-reset-status');
@@ -2275,6 +2337,7 @@ async function resetAllToP6S1() {
 // (case-insensitive) and rewrites their `mode` field. Avoids touching
 // the Firebase console for one-off corrections.
 async function setStudentMode() {
+  if (!requireAdmin()) return;
   const nameQ = document.getElementById('admin-mode-name').value.trim().toLowerCase();
   const newMode = document.getElementById('admin-mode-value').value;
   const statusEl = document.getElementById('admin-mode-status');

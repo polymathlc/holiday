@@ -749,36 +749,6 @@
   /* ══════════════════════════════════════════════════════════
      ADMIN PANEL
   ══════════════════════════════════════════════════════════ */
-  .admin-badge {
-    position: fixed;
-    top: 16px;
-    right: 16px;
-    z-index: 500;
-    display: none;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background: var(--black);
-    color: var(--white);
-    border-radius: var(--radius-xs);
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    box-shadow: var(--shadow);
-    cursor: pointer;
-    transition: opacity var(--transition);
-  }
-  .admin-badge.show { display: inline-flex; }
-  .admin-badge:hover { opacity: 0.85; }
-  .admin-badge::before {
-    content: '';
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #4ade80;
-    box-shadow: 0 0 6px #4ade80;
-  }
 
   .admin-panel {
     position: fixed;
@@ -838,7 +808,7 @@
   }
   .admin-student-controls {
     display: grid;
-    grid-template-columns: 1fr 1fr auto;
+    grid-template-columns: 1fr 1fr auto auto;
     gap: 6px;
   }
   .admin-student-controls select,
@@ -861,6 +831,15 @@
   }
   .admin-student-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
   .admin-student-controls button.dirty { background: var(--danger); border-color: var(--danger); }
+  .admin-student-controls button.delete-btn {
+    background: var(--white);
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+  .admin-student-controls button.delete-btn:hover:not(:disabled) {
+    background: var(--danger);
+    color: var(--white);
+  }
 
   .admin-panel.show { display: block; }
 
@@ -1122,17 +1101,21 @@
   </div>
 </div>
 
-<!-- Admin Badge: only visible when signed in as ADMIN_EMAIL. Hidden trigger
-     for first login: navigate to "#admin" in the URL. -->
-<button id="admin-badge" class="admin-badge" onclick="handleAdminToggle()"
-        title="Admin Console — click to toggle">Logged in as admin</button>
+<!-- Admin panel is invisible to public visitors. To sign in, navigate to
+     "#admin" in the URL; while signed in, "#admin" reopens the panel. -->
 <div id="admin-panel" class="admin-panel">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:6px;">
     <h3 style="margin:0;">Admin Console</h3>
-    <button onclick="adminSignOut()" id="admin-signout"
-            style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;
-                   background:transparent;color:var(--gray-500);border:1px solid var(--gray-200);
-                   border-radius:var(--radius-xs);padding:4px 8px;cursor:pointer;">Sign out</button>
+    <div style="display:flex;gap:6px;">
+      <button onclick="closeAdminPanel()"
+              style="font-size:14px;line-height:1;background:transparent;color:var(--gray-500);
+                     border:1px solid var(--gray-200);border-radius:var(--radius-xs);
+                     padding:4px 8px;cursor:pointer;" title="Hide panel (stays signed in)">&times;</button>
+      <button onclick="adminSignOut()" id="admin-signout"
+              style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;
+                     background:transparent;color:var(--gray-500);border:1px solid var(--gray-200);
+                     border-radius:var(--radius-xs);padding:4px 8px;cursor:pointer;">Sign out</button>
+    </div>
   </div>
   <div id="admin-user" style="font-size:11px;color:var(--gray-500);margin-bottom:14px;"></div>
 
@@ -2333,11 +2316,11 @@ async function adminSignInFlow() {
   }
 }
 
-// Toggles the admin panel when the badge is clicked. The badge is only
-// rendered for the authenticated admin, so this never runs for visitors.
-function handleAdminToggle() {
-  if (!auth.currentUser || auth.currentUser.email !== ADMIN_EMAIL) return;
-  document.getElementById('admin-panel').classList.toggle('show');
+// Hides the admin panel without signing out. The admin can reopen it by
+// navigating to "#admin" again — their session is already authenticated so
+// no popup appears.
+function closeAdminPanel() {
+  document.getElementById('admin-panel').classList.remove('show');
 }
 
 async function adminSignOut() {
@@ -2348,19 +2331,15 @@ async function adminSignOut() {
   }
 }
 
-// Drive badge visibility, panel state, and the registrations list from auth
-// state. Non-admins never see admin UI and never have PII rendered into the
-// DOM, even briefly.
+// Drive panel state and the registrations list from auth state. Non-admins
+// never see admin UI and never have PII rendered into the DOM, even briefly.
 auth.onAuthStateChanged(user => {
   const userEl = document.getElementById('admin-user');
-  const badge = document.getElementById('admin-badge');
   if (user && user.email === ADMIN_EMAIL) {
     if (userEl) userEl.textContent = 'Signed in as ' + user.email;
-    if (badge) badge.classList.add('show');
     renderAdminRegistrations();
   } else {
     if (userEl) userEl.textContent = '';
-    if (badge) badge.classList.remove('show');
     document.getElementById('admin-panel').classList.remove('show');
     const reg = document.getElementById('admin-registrations');
     if (reg) reg.innerHTML = '';
@@ -2425,6 +2404,7 @@ function renderAdminRegistrations() {
       +     '<select data-field="slot" onchange="markStudentDirty(\'' + id + '\')">' + slotOptions(r.slot) + '</select>'
       +     '<select data-field="mode" onchange="markStudentDirty(\'' + id + '\')">' + modeOptions(r.mode) + '</select>'
       +     '<button onclick="saveStudentEdit(\'' + id + '\')">Save</button>'
+      +     '<button class="delete-btn" onclick="deleteStudent(\'' + id + '\')" title="Delete this registration permanently">Delete</button>'
       +   '</div>'
       + '</div>';
   };
@@ -2452,6 +2432,38 @@ function markStudentDirty(id) {
   if (!row) return;
   const btn = row.querySelector('button');
   if (btn) { btn.classList.add('dirty'); btn.textContent = 'Save *'; }
+}
+
+// Permanently removes a registration from Firestore. Requires the admin to
+// type the student's name to confirm, since this is irreversible.
+async function deleteStudent(id) {
+  if (!requireAdmin()) return;
+  const reg = allRegistrations.find(r => r._id === id);
+  if (!reg) { alert('Registration not found.'); return; }
+  const name = reg.studentName || '(no name)';
+  const typed = prompt(
+    'Type the student\'s name to permanently delete this registration.\n\n'
+    + 'Student: ' + name + '\n'
+    + 'Parent: ' + (reg.parentName || '—') + '\n'
+    + 'Email: ' + (reg.email || '—') + '\n\n'
+    + 'This cannot be undone.'
+  );
+  if (typed === null) return;
+  if (typed.trim().toLowerCase() !== name.trim().toLowerCase()) {
+    alert('Name did not match. Delete cancelled.');
+    return;
+  }
+  const row = document.querySelector('.admin-student[data-id="' + id + '"]');
+  const btn = row ? row.querySelector('.delete-btn') : null;
+  if (btn) { btn.disabled = true; btn.textContent = 'Deleting…'; }
+  try {
+    await db.collection('june2026_registrations').doc(id).delete();
+    // The onSnapshot listener will refresh the list automatically.
+  } catch (err) {
+    console.error('deleteStudent failed:', err);
+    if (btn) { btn.disabled = false; btn.textContent = 'Delete'; }
+    alert('Delete failed: ' + (err.message || err));
+  }
 }
 
 async function saveStudentEdit(id) {

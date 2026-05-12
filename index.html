@@ -808,7 +808,7 @@
   }
   .admin-student-controls {
     display: grid;
-    grid-template-columns: 1fr 1fr auto;
+    grid-template-columns: 1fr 1fr auto auto;
     gap: 6px;
   }
   .admin-student-controls select,
@@ -831,6 +831,15 @@
   }
   .admin-student-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
   .admin-student-controls button.dirty { background: var(--danger); border-color: var(--danger); }
+  .admin-student-controls button.delete-btn {
+    background: var(--white);
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+  .admin-student-controls button.delete-btn:hover:not(:disabled) {
+    background: var(--danger);
+    color: var(--white);
+  }
 
   .admin-panel.show { display: block; }
 
@@ -2395,6 +2404,7 @@ function renderAdminRegistrations() {
       +     '<select data-field="slot" onchange="markStudentDirty(\'' + id + '\')">' + slotOptions(r.slot) + '</select>'
       +     '<select data-field="mode" onchange="markStudentDirty(\'' + id + '\')">' + modeOptions(r.mode) + '</select>'
       +     '<button onclick="saveStudentEdit(\'' + id + '\')">Save</button>'
+      +     '<button class="delete-btn" onclick="deleteStudent(\'' + id + '\')" title="Delete this registration permanently">Delete</button>'
       +   '</div>'
       + '</div>';
   };
@@ -2422,6 +2432,38 @@ function markStudentDirty(id) {
   if (!row) return;
   const btn = row.querySelector('button');
   if (btn) { btn.classList.add('dirty'); btn.textContent = 'Save *'; }
+}
+
+// Permanently removes a registration from Firestore. Requires the admin to
+// type the student's name to confirm, since this is irreversible.
+async function deleteStudent(id) {
+  if (!requireAdmin()) return;
+  const reg = allRegistrations.find(r => r._id === id);
+  if (!reg) { alert('Registration not found.'); return; }
+  const name = reg.studentName || '(no name)';
+  const typed = prompt(
+    'Type the student\'s name to permanently delete this registration.\n\n'
+    + 'Student: ' + name + '\n'
+    + 'Parent: ' + (reg.parentName || '—') + '\n'
+    + 'Email: ' + (reg.email || '—') + '\n\n'
+    + 'This cannot be undone.'
+  );
+  if (typed === null) return;
+  if (typed.trim().toLowerCase() !== name.trim().toLowerCase()) {
+    alert('Name did not match. Delete cancelled.');
+    return;
+  }
+  const row = document.querySelector('.admin-student[data-id="' + id + '"]');
+  const btn = row ? row.querySelector('.delete-btn') : null;
+  if (btn) { btn.disabled = true; btn.textContent = 'Deleting…'; }
+  try {
+    await db.collection('june2026_registrations').doc(id).delete();
+    // The onSnapshot listener will refresh the list automatically.
+  } catch (err) {
+    console.error('deleteStudent failed:', err);
+    if (btn) { btn.disabled = false; btn.textContent = 'Delete'; }
+    alert('Delete failed: ' + (err.message || err));
+  }
 }
 
 async function saveStudentEdit(id) {

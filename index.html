@@ -256,6 +256,8 @@
 
   .field input[type="text"],
   .field input[type="email"],
+  .field input[type="tel"],
+  .field input[type="number"],
   .field select {
     width: 100%;
     padding: 11px 14px;
@@ -414,6 +416,32 @@
     font-weight: 700;
     color: var(--black);
     letter-spacing: -1px;
+  }
+
+  .price-display .price-original {
+    font-size: 13px;
+    color: var(--gray-500);
+    text-decoration: line-through;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  .price-display .price-promo {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--success);
+    background: var(--success-bg);
+    border: 1px solid var(--success-border);
+    padding: 3px 8px;
+    border-radius: 999px;
+    margin-top: 6px;
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -1129,6 +1157,44 @@
   <div id="admin-registrations"></div>
 
   <details class="admin-group" style="margin-top:18px;">
+    <summary>Promotion <span class="count-badge" id="promo-status-badge">Off</span></summary>
+    <div style="padding:12px;display:flex;flex-direction:column;gap:10px;">
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--gray-900);">
+        <input type="checkbox" id="promo-active" style="width:16px;height:16px;cursor:pointer;">
+        Active (apply to all new registrations)
+      </label>
+
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--gray-600);margin-bottom:4px;">Type</div>
+        <select id="promo-type" style="width:100%;padding:8px 10px;border:1px solid var(--gray-300);border-radius:var(--radius-xs);font-size:12px;background:var(--white);">
+          <option value="amount">$ off (fixed amount)</option>
+          <option value="percent">% off (percentage)</option>
+        </select>
+      </div>
+
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--gray-600);margin-bottom:4px;">Value</div>
+        <input type="number" id="promo-value" min="0" step="1" placeholder="e.g. 20"
+               style="width:100%;padding:8px 10px;border:1px solid var(--gray-300);border-radius:var(--radius-xs);font-size:12px;background:var(--white);box-sizing:border-box;">
+      </div>
+
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--gray-600);margin-bottom:4px;">Label (optional, shown to parents)</div>
+        <input type="text" id="promo-label" placeholder="e.g. Early bird discount" maxlength="60"
+               style="width:100%;padding:8px 10px;border:1px solid var(--gray-300);border-radius:var(--radius-xs);font-size:12px;background:var(--white);box-sizing:border-box;">
+      </div>
+
+      <button id="promo-save-btn" onclick="savePromotion()"
+              style="margin-top:4px;width:100%;padding:10px 12px;font-size:11px;font-weight:700;
+                     text-transform:uppercase;letter-spacing:1.5px;background:var(--black);
+                     color:var(--white);border:none;border-radius:var(--radius-xs);cursor:pointer;">
+        Save Promotion
+      </button>
+      <div id="promo-save-status" style="font-size:11px;color:var(--gray-500);min-height:14px;"></div>
+    </div>
+  </details>
+
+  <details class="admin-group" style="margin-top:18px;">
     <summary>Danger Zone <span class="count-badge">!</span></summary>
     <div style="padding:10px 12px;">
       <button id="admin-reset-btn" onclick="resetAllToP6S1()"
@@ -1283,8 +1349,14 @@
       </div>
 
       <div class="price-display hidden" id="price-display">
-        <div class="price-label">Amount to pay</div>
-        <div class="price-amount" id="price-amount">$0</div>
+        <div>
+          <div class="price-label">Amount to pay</div>
+          <div class="price-promo hidden" id="price-promo"></div>
+        </div>
+        <div style="text-align:right;">
+          <div class="price-original hidden" id="price-original">$0</div>
+          <div class="price-amount" id="price-amount">$0</div>
+        </div>
       </div>
 
       <div class="step-hint" id="hint-slot">Select level and class mode in the previous steps to see available slots.</div>
@@ -1446,6 +1518,78 @@ const SCOPE_CONTENT = {
 
 // ─── Firestore Real-Time ───
 let allRegistrations = [];
+let currentPromo = { active: false, type: 'amount', value: 0, label: '' };
+
+function listenToPromotion() {
+  db.collection('june2026_config').doc('promotion').onSnapshot(doc => {
+    const d = doc.exists ? doc.data() : null;
+    currentPromo = {
+      active: !!(d && d.active),
+      type: d && d.type === 'percent' ? 'percent' : 'amount',
+      value: d && typeof d.value === 'number' ? d.value : 0,
+      label: d && typeof d.label === 'string' ? d.label : ''
+    };
+    populatePromoForm();
+    updatePrice();
+    refreshPaymentDisplay();
+  }, err => console.error('Promotion listener error:', err));
+}
+
+function populatePromoForm() {
+  const active = document.getElementById('promo-active');
+  if (!active) return;
+  active.checked = currentPromo.active;
+  document.getElementById('promo-type').value = currentPromo.type;
+  document.getElementById('promo-value').value = currentPromo.value || '';
+  document.getElementById('promo-label').value = currentPromo.label || '';
+  const badge = document.getElementById('promo-status-badge');
+  if (badge) badge.textContent = currentPromo.active ? 'On' : 'Off';
+}
+
+function refreshPaymentDisplay() {
+  const payCard = document.getElementById('payment-card');
+  const slot = document.querySelector('input[name="slot"]:checked');
+  if (payCard && !payCard.classList.contains('hidden') && slot) {
+    showPaymentSection();
+  }
+}
+
+async function savePromotion() {
+  if (!requireAdmin()) return;
+  const btn = document.getElementById('promo-save-btn');
+  const statusEl = document.getElementById('promo-save-status');
+  const active = document.getElementById('promo-active').checked;
+  const type = document.getElementById('promo-type').value;
+  const value = Math.max(0, Number(document.getElementById('promo-value').value) || 0);
+  const label = document.getElementById('promo-label').value.trim();
+  if (active && value <= 0) {
+    statusEl.textContent = 'Enter a value greater than 0, or untick Active.';
+    return;
+  }
+  if (active && type === 'percent' && value > 100) {
+    statusEl.textContent = 'Percentage cannot exceed 100.';
+    return;
+  }
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'Saving…';
+  statusEl.textContent = '';
+  try {
+    await db.collection('june2026_config').doc('promotion').set({
+      active, type, value, label,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy: auth.currentUser ? auth.currentUser.email : null
+    });
+    statusEl.textContent = 'Saved.';
+    setTimeout(() => { if (statusEl.textContent === 'Saved.') statusEl.textContent = ''; }, 2000);
+  } catch (err) {
+    console.error('savePromotion failed:', err);
+    statusEl.textContent = 'Save failed: ' + (err.message || err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
 
 function listenToSlotCounts() {
   db.collection('june2026_registrations').onSnapshot(snapshot => {
@@ -1746,16 +1890,51 @@ function onSlotChange() {
   updateProgression();
 }
 
-function getPrice() {
+function getBasePrice() {
   const mode = modeSelect.value;
   return mode === 'Physical' ? 280 : mode === 'Online' ? 240 : 0;
 }
 
+function computeDiscount(basePrice) {
+  if (!currentPromo.active || basePrice <= 0) return 0;
+  const v = Math.max(0, Number(currentPromo.value) || 0);
+  if (v <= 0) return 0;
+  const raw = currentPromo.type === 'percent' ? (basePrice * v / 100) : v;
+  return Math.min(basePrice, Math.round(raw));
+}
+
+function getPrice() {
+  const base = getBasePrice();
+  return Math.max(0, base - computeDiscount(base));
+}
+
+function promoDescription() {
+  if (!currentPromo.active) return '';
+  const v = Number(currentPromo.value) || 0;
+  if (v <= 0) return '';
+  const off = currentPromo.type === 'percent' ? (v + '% off') : ('$' + v + ' off');
+  return currentPromo.label ? (currentPromo.label + ' · ' + off) : off;
+}
+
 function updatePrice() {
-  const price = getPrice();
+  const base = getBasePrice();
+  const discount = computeDiscount(base);
+  const final = Math.max(0, base - discount);
   const el = document.getElementById('price-display');
-  document.getElementById('price-amount').textContent = '$' + price;
-  price > 0 ? el.classList.remove('hidden') : el.classList.add('hidden');
+  const amount = document.getElementById('price-amount');
+  const orig = document.getElementById('price-original');
+  const promo = document.getElementById('price-promo');
+  amount.textContent = '$' + final;
+  if (discount > 0 && base > 0) {
+    orig.textContent = '$' + base;
+    orig.classList.remove('hidden');
+    promo.textContent = promoDescription();
+    promo.classList.remove('hidden');
+  } else {
+    orig.classList.add('hidden');
+    promo.classList.add('hidden');
+  }
+  base > 0 ? el.classList.remove('hidden') : el.classList.add('hidden');
 }
 
 function showPaymentSection() {
@@ -2233,11 +2412,23 @@ async function submitForm() {
     await ref.put(receiptFile);
     const receiptURL = await ref.getDownloadURL();
 
+    const basePrice = getBasePrice();
+    const finalPrice = getPrice();
+    const discount = basePrice - finalPrice;
+    const promoSnapshot = discount > 0 ? {
+      type: currentPromo.type,
+      value: currentPromo.value,
+      label: currentPromo.label || null
+    } : null;
+
     await db.collection('june2026_registrations').add({
       studentName, parentName, email, whatsapp, level, mode,
       slot: slotVal,
       slotLabel: SLOT_CONFIG[slotVal].label,
-      price: getPrice(),
+      price: finalPrice,
+      priceOriginal: basePrice,
+      discount,
+      promotion: promoSnapshot,
       receiptURL,
       receiptFilename: receiptFile.name,
       submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -2252,7 +2443,10 @@ async function submitForm() {
         studentName, parentName, email, whatsapp, level, mode,
         slot: slotVal,
         slotLabel: SLOT_CONFIG[slotVal].label,
-        price: getPrice(),
+        price: finalPrice,
+        priceOriginal: basePrice,
+        discount,
+        promotion: promoSnapshot,
         receiptURL,
         receiptFilename: receiptFile.name
       };
@@ -2539,6 +2733,7 @@ async function resetAllToP6S1() {
 // ─── Init ───
 loadQRLib();
 listenToSlotCounts();
+listenToPromotion();
 </script>
 </body>
 </html>
